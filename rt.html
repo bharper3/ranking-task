@@ -1,0 +1,28 @@
+<!--
+  Ranking Task Player (for iframe embedding)
+  astro.unl.edu
+  v0.0.1 (in active development)
+  22 June 2018
+-->
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking Task Player</title>
+<link rel="stylesheet" type="text/css" href="rt.css">
+<script src="rt.js"></script>
+<script>
+var rt = null;
+function onLoad(e) {
+  var rtElement = document.getElementById("rt");
+  rt = new RankingTask(rtElement); 
+  rt.initWithXML("coins-rt.xml"); // todo: get URL from query string
+  window.removeEventListener("load", onLoad);
+}
+window.addEventListener("load", onLoad);
+</script>
+</head>
+<body style="margin: 0; height: 100%">
+<div id="rt" class="rt-root-div"></div>
+</body>
+</html>

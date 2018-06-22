@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rankingTask>
+  <question>Rank the coins by increasing value.</question>
+  <items>
+		<item>
+			<img>penny.png</img>
+			<value>1</value>
+		</item>
+		<item>
+			<img>nickel.png</img>
+			<value>5</value>
+		<item>
+			<img>dime.png</img>
+			<value>10</value>
+		</item>
+		<item>
+			<img>quarter.png</img>
+			<value>25</value>
+		</item>
+	</items>
+</rankingTask>
