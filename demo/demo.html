@@ -3,11 +3,37 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ranking Task Demo</title>
+
+<link rel="stylesheet" type="text/css" href="../rt.css">
 </head>
 <body>
-<p>A ranking task player is embedded below in an iframe.</p>
+<p>The stand-alone ranking task player (a separate html page) is embedded below in an iframe with dimensions of 700x200 px.</p>
 
 <iframe width="700" height="200" src="../rt.html" style="border: none"></iframe>
+
+<p>All the content below is contained in a div with horizontal padding of 30px. This is done to make positioning problems more apparent.</p>
+  
+  <div style="padding: 0px 30px">
+  
+  <p>The ranking task below is directly embedded in this page's html at 700x200 px.</p>
+  
+  <div id="rt2" class="rt-root-div" style="width: 700px; height: 200px"></div>
+  
+  <p>Here is another directly embedded ranking task. This one has no dimensions specified, so it expands to 100% width and takes whatever vertical space is required (it will not resize the images unless required to fit horizontally).</p>
+  
+  <div id="rt3" class="rt-root-div"></div>
+  
+</div>
+
+<script src="../rt.js"></script>
+<script>
+var rt2 = document.getElementById("rt2");
+rt2 = new RankingTask(rt2, "");
+rt2.initWithXML("blah");
+var rt3 = document.getElementById("rt3");
+rt3 = new RankingTask(rt3, "");
+rt3.initWithXML("blah");
+</script>
 
 </body>
 </html>

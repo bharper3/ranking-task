@@ -1,51 +1,58 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.1 (in active development)
- * 22 June 2018
+ * v0.0.2 (in active development)
+ * 25 June 2018
 */
+
+console.log("rt.js is executing");
 
 
 /*
  *  RankingTask
  */
 
-function RankingTask(rootElement) {
+function RankingTask(rootElement, prefixKludge) {
+
+  this._prefix = prefixKludge; // todo: remove
+
+  // todo: verify rootElement is a div with correct class, and log meaningful
+  //  error if it is not
 
   while (rootElement.firstChild) {
     rootElement.removeChild(rootElement.firstChild);
   }
   this._rootElement = rootElement;
 
+  // _heightIsRestricted determines whether to limit the height of content.
+  this._heightIsRestricted = (this._rootElement.clientHeight > 0);
+
+  // dragMarginIncursion -- defines the drag limits of an item as a fraction of
+  //  the margin around the items' area (rt-items-div)
   this.dragMarginIncursion = 0.75;
+
+  // The root div uses border-box sizing to avoid overflow in the iframe player.
+  // The inner div makes it easier to account for the root div's border in laying
+  //   out the question and items.
+  this._innerDiv = document.createElement("div");
+  this._innerDiv.className = "rt-inner-div";
+  this._rootElement.appendChild(this._innerDiv);
 
   this._question = document.createElement("p");
   this._question.className = "rt-question-p";
-  this._rootElement.appendChild(this._question);
+  this._innerDiv.appendChild(this._question);
   
   this._itemsDiv = document.createElement("div");
   this._itemsDiv.className = "rt-items-div";
-  this._rootElement.appendChild(this._itemsDiv);
+  this._innerDiv.appendChild(this._itemsDiv);
 }
 
 RankingTask.prototype.initWithXML = function(xmlURL) {
 
-//  console.log("initWithXML, url: "+xmlURL);
-//  var r = this._rootElement.getBoundingClientRect();
-//console.log(r);
-
-//  this._itemsContainer = document.createElement("div");
-//  this._itemsContainer.style.margin = "0";
-//  this._itemsContainer.style.backgroundColor = "lightRed";
-//  this._rootElement.appendChild(this._itemsContainer);
-
-//this._maxItemHeight = window.innerHeight - this._itemsContainer.offsetTop;
-  
-  
   this._question.textContent = "Rank the coins by increasing value. This is a longer sentence in order to achieve wrap-around. The previous sentence may not be long enough, so this sentence has been added.";
 
-  var images = ["demo/penny.png", "demo/nickel.png", "demo/dime.png", "demo/quarter.png"];
-  
+  var images = [this._prefix+"penny.png", this._prefix+"nickel.png", this._prefix+"dime.png", this._prefix+"quarter.png"];
+ 
   this._items = [];
   this._itemsCountdown = images.length;
 
@@ -54,7 +61,6 @@ RankingTask.prototype.initWithXML = function(xmlURL) {
     var item = new RTImageItem(this, src, src);
     this._items.push(item);
   }
-
 };
 
 RankingTask.prototype._itemIsReady = function(item) {
@@ -83,6 +89,31 @@ RankingTask.prototype._itemIsReady = function(item) {
 RankingTask.prototype._recalculateScale = function() {
   // todo: skip if fundamentals have not changed, or call only on relevant change events
 
+  var qBB = this._question.getBoundingClientRect();
+  console.log("qBB...");
+  console.log(qBB);
+
+  var innerBB = this._innerDiv.getBoundingClientRect();
+  console.log("innerBB...");
+  console.log(innerBB);
+
+  this._margin = qBB.left - innerBB.left;
+
+  this._itemsDiv.style.left = this._margin + "px";
+  this._itemsDiv.style.top = this._margin + "px";
+  this._itemsDiv.style.width = qBB.width + "px";
+ 
+  // When height is restricted the height of itemsDiv and innerDiv is deteremined later, after
+  //  inspecting all the items.
+  if (this._heightIsRestricted) {
+    this._itemsDiv.style.height = (innerBB.height - 3*this._margin - qBB.height) + "px";
+  }
+
+  var itemsBB = this._itemsDiv.getBoundingClientRect();
+  console.log("itemsBB...");
+  console.log(itemsBB);
+
+
   // Review the unscaled sizes of the items.
   var widthSum = 0.0;
   var maxHeight = 0.0;
@@ -90,44 +121,55 @@ RankingTask.prototype._recalculateScale = function() {
     var item = this._items[i];
     var size = item.getRawSize();
     widthSum += size.width;
-    if (size.height > maxHeight) maxHeight = size.height;
+    if (size.height > maxHeight) {
+      maxHeight = size.height;
+    }
   }
+
+  console.log("max image height: "+maxHeight);
 
   // Calculate the max scale such that all items fit vertically.
-  var itemsBB = this._itemsDiv.getBoundingClientRect();
   var maxHeightScale = 1.0;
-  if (itemsBB.height > 0.0) {
-    var maxHeightScale = Math.min(itemsBB.height/maxHeight, 1.0);
+  if (this._heightIsRestricted) {
+    if (itemsBB.height > 0.0) {
+      maxHeightScale = Math.min(itemsBB.height/maxHeight, 1.0);
+    }
   }
-
+  
   // Calculate the max scale such that all items fit horizontally.
-  var rootBB = this._rootElement.getBoundingClientRect();
-  this._margin = itemsBB.x - rootBB.x;
   var widthAvailable = itemsBB.width - this._margin*(this._items.length - 1);
   var maxWidthScale = widthAvailable/widthSum; 
   
   // Determine the scale to use and apply it to all items.
   var scale = Math.min(maxHeightScale, maxWidthScale);
   widthSum = 0.0;
+  maxHeight = 0.0;
   for (var i = 0; i < this._items.length; ++i) {
     var item = this._items[i];
     var element = item.getElement();
     var size = item.getRawSize();
     var w = scale*size.width;
     element.style.width = w + "px";
-    element.style.height = scale*size.height + "px";
+    var h =  scale*size.height;
+    element.style.height = h + "px";
     widthSum += w;
+    if (h > maxHeight) maxHeight = h;
   }
   widthSum += this._margin*(this._items.length - 1);
   this._itemsStartX = (itemsBB.width - widthSum)/2.0;
-  this._itemsMidlineY = itemsBB.y + (itemsBB.height/2.0);
-  this._itemsMinX = itemsBB.x - this.dragMarginIncursion*this._margin;
-  this._itemsMaxX = itemsBB.x + itemsBB.width + this.dragMarginIncursion*this._margin;
+  this._itemsMidlineY = (itemsBB.height/2.0);
+  this._itemsMinX = itemsBB.left - this.dragMarginIncursion*this._margin;
+  this._itemsMaxX = itemsBB.left + itemsBB.width + this.dragMarginIncursion*this._margin;
 
-//  console.log("itemsStartX: "+this._itemsStartX);
-//  console.log("itemsMidlineY: "+this._itemsMidlineY);
-//  console.log("itemsMinX: " + this._itemsMinX);
-//  console.log("itemsMaxX: " + this._itemsMaxX);
+  if (!this._heightIsRestricted) {
+    this._itemsDiv.style.height = maxHeight + "px";
+    this._itemsMidlineY = maxHeight/2.0;
+  }
+
+  console.log("itemsStartX: "+this._itemsStartX);
+  console.log("itemsMidlineY: "+this._itemsMidlineY);
+  console.log("itemsMinX: " + this._itemsMinX);
+  console.log("itemsMaxX: " + this._itemsMaxX);
 };
 
 RankingTask.prototype._resetItemLayout = function() {
@@ -153,7 +195,7 @@ RankingTask.prototype._dragStart = function(e, item) {
 //  console.log("mousedown, "+item.getID());
   var element = item.getElement();
   var itemBB = element.getBoundingClientRect();
-//  console.log(" itemBB.x: "+itemBB.x);
+//  console.log(" itemBB.left: "+itemBB.left);
 //  console.log(" mouse: "+e.clientX+", "+e.clientY);
 
   element.style.zIndex = this._nextZIndex;
@@ -161,7 +203,7 @@ RankingTask.prototype._dragStart = function(e, item) {
 
   this._dragItem = item;
   this._dragInitMouseX = e.clientX;
-  this._dragInitX = itemBB.x;
+  this._dragInitX = itemBB.left;
   this._dragMinX = this._itemsMinX;
   this._dragMaxX = this._itemsMaxX - itemBB.width;
 

@@ -1,35 +1,39 @@
 /*
  * Ranking Task Widget - CSS
  * astro.unl.edu
- * v0.0.1 (in active development)
- * 22 June 2018
+ * v0.0.2 (in active development)
+ * 25 June 2018
  */
 
 .rt-root-div {
-  border: 1px solid #aaa;
+  border: 40px solid #aaa;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
-/*  background-color: lightgreen; */
+  background-color: lightgreen;
   overflow: hidden;
+  padding: 0px;
+  margin: 0px;
+}
+
+.rt-inner-div {
+  width: 100%;
+  height: 100%;
 }
 
 .rt-question-p {
-  margin: 1em 1em 1em 1em;
-  flex: 1;
-/*  background-color: lightblue; */
+  margin: 1em 1em 0em 1em;
+  background-color: lightblue;
 }
 
 .rt-items-div {
-  margin: 0 1em 1em 1em;
-  flex: 5;
-/*  background-color: pink; */
+  position: relative;
+  margin: 0em 0em 2em 0em;
+  background-color: pink;
 }
 
 .rt-item-img {
   position: absolute;
-  margin: 0;
+  margin: 0px;
 }
 

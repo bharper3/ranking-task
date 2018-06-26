@@ -1,8 +1,8 @@
 <!--
   Ranking Task Player (for iframe embedding)
   astro.unl.edu
-  v0.0.1 (in active development)
-  22 June 2018
+  v0.0.2 (in active development)
+  25 June 2018
 -->
 <!DOCTYPE html>
 <html style="height: 100%">
@@ -15,7 +15,7 @@
 var rt = null;
 function onLoad(e) {
   var rtElement = document.getElementById("rt");
-  rt = new RankingTask(rtElement); 
+  rt = new RankingTask(rtElement, "demo/"); 
   rt.initWithXML("coins-rt.xml"); // todo: get URL from query string
   window.removeEventListener("load", onLoad);
 }
@@ -23,6 +23,6 @@ window.addEventListener("load", onLoad);
 </script>
 </head>
 <body style="margin: 0; height: 100%">
-<div id="rt" class="rt-root-div"></div>
+<div id="rt" class="rt-root-div" style="height: 100%"></div>
 </body>
 </html>
