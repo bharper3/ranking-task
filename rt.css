@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - CSS
  * astro.unl.edu
- * v0.0.2 (in active development)
- * 25 June 2018
+ * v0.0.3 (in active development)
+ * 26 June 2018
  */
 
 .rt-root-div {
@@ -11,7 +11,7 @@
   width: 100%;
   height: 100%;
   background-color: lightgreen;
-  overflow: hidden;
+  /*overflow: hidden;*/
   padding: 0px;
   margin: 0px;
 }
@@ -19,21 +19,37 @@
 .rt-inner-div {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .rt-question-p {
-  margin: 1em 1em 0em 1em;
+  flex: 1 1 auto;
+  margin: 1em 1em 1em 1em;
   background-color: lightblue;
 }
 
 .rt-items-div {
-  position: relative;
-  margin: 0em 0em 2em 0em;
+  flex: 1 1 auto;
+/*  position: relative; */
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  margin: 0em 1em 1em 1em;
   background-color: pink;
+  height: 100%;
+}
+
+.rt-item-div {
+  flex: 0 1 auto;
+  height: 100%;
+  margin: 0em 1em;
 }
 
 .rt-item-img {
-  position: absolute;
-  margin: 0px;
+  max-width: 100%;
+  max-height: 100%;
+  /*position: absolute;*/
+  /*margin: 0px;*/
 }
 

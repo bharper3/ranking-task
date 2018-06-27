@@ -45,6 +45,12 @@ function RankingTask(rootElement, prefixKludge) {
   this._itemsDiv = document.createElement("div");
   this._itemsDiv.className = "rt-items-div";
   this._innerDiv.appendChild(this._itemsDiv);
+
+  var id = this._rootElement.id;
+
+  var s = new ResizeSensor(this._itemsDiv, function() {
+    console.log("items div has resized, "+id);
+  });
 }
 
 RankingTask.prototype.initWithXML = function(xmlURL) {
@@ -68,13 +74,17 @@ RankingTask.prototype._itemIsReady = function(item) {
   // Add item's element, but keep it hidden until after first layout.
   var element = item.getElement();
   element.style.display = "none";
-  this._itemsDiv.appendChild(element);
+
+  var itemWrapper = document.createElement("div");
+  itemWrapper.className = "rt-item-div";
+  itemWrapper.appendChild(element);
+  this._itemsDiv.appendChild(itemWrapper);
   
   this._itemsCountdown -= 1;
   if (this._itemsCountdown == 0) {
     // All items ready.
    
-    this._recalculateScale();
+    //this._recalculateScale();
     
     // Make items visible.
     for (var i = 0; i < this._items.length; ++i) {
@@ -82,7 +92,7 @@ RankingTask.prototype._itemIsReady = function(item) {
       element.style.display = "block";
     }
 
-    this._resetItemLayout();
+    //this._resetItemLayout();
   }
 };
 
@@ -99,9 +109,9 @@ RankingTask.prototype._recalculateScale = function() {
 
   this._margin = qBB.left - innerBB.left;
 
-  this._itemsDiv.style.left = this._margin + "px";
-  this._itemsDiv.style.top = this._margin + "px";
-  this._itemsDiv.style.width = qBB.width + "px";
+  //this._itemsDiv.style.left = this._margin + "px";
+  //this._itemsDiv.style.top = this._margin + "px";
+  //this._itemsDiv.style.width = qBB.width + "px";
  
   // When height is restricted the height of itemsDiv and innerDiv is deteremined later, after
   //  inspecting all the items.
