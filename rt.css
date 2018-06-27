@@ -11,7 +11,7 @@
   width: 100%;
   height: 100%;
   background-color: lightgreen;
-  /*overflow: hidden;*/
+  overflow: hidden;
   padding: 0px;
   margin: 0px;
 }
@@ -19,37 +19,25 @@
 .rt-inner-div {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
 .rt-question-p {
-  flex: 1 1 auto;
-  margin: 1em 1em 1em 1em;
+  margin: 1em;
   background-color: lightblue;
 }
 
 .rt-items-div {
-  flex: 1 1 auto;
-/*  position: relative; */
-  display: flex;
-  justify-content: center;
-  align-content: center;
-  margin: 0em 1em 1em 1em;
+  position: relative;
+  margin: 1em;
   background-color: pink;
-  height: 100%;
 }
 
 .rt-item-div {
-  flex: 0 1 auto;
-  height: 100%;
-  margin: 0em 1em;
+  position: absolute;
 }
 
 .rt-item-img {
-  max-width: 100%;
-  max-height: 100%;
-  /*position: absolute;*/
-  /*margin: 0px;*/
+  width: 100%;
+  height: 100%;
 }
 

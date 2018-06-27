@@ -5,8 +5,6 @@
  * 25 June 2018
 */
 
-console.log("rt.js is executing");
-
 
 /*
  *  RankingTask
@@ -18,10 +16,8 @@ function RankingTask(rootElement, prefixKludge) {
 
   // todo: verify rootElement is a div with correct class, and log meaningful
   //  error if it is not
-
-  while (rootElement.firstChild) {
-    rootElement.removeChild(rootElement.firstChild);
-  }
+  
+  this._removeChildren(rootElement);
   this._rootElement = rootElement;
 
   // _heightIsRestricted determines whether to limit the height of content.
@@ -47,13 +43,26 @@ function RankingTask(rootElement, prefixKludge) {
   this._innerDiv.appendChild(this._itemsDiv);
 
   var id = this._rootElement.id;
-
+  var rt = this;
   var s = new ResizeSensor(this._itemsDiv, function() {
-    console.log("items div has resized, "+id);
+    console.log("ResizeSensor called for "+id);
+    rt._resetLayout();
   });
 }
 
+RankingTask.prototype._removeChildren = function(element) {
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+};
+
+RankingTask.prototype._init = function() {
+  this._removeChildren(this._itemsDiv);
+};
+
 RankingTask.prototype.initWithXML = function(xmlURL) {
+
+  this._init();
 
   this._question.textContent = "Rank the coins by increasing value. This is a longer sentence in order to achieve wrap-around. The previous sentence may not be long enough, so this sentence has been added.";
 
@@ -75,54 +84,36 @@ RankingTask.prototype._itemIsReady = function(item) {
   var element = item.getElement();
   element.style.display = "none";
 
-  var itemWrapper = document.createElement("div");
-  itemWrapper.className = "rt-item-div";
-  itemWrapper.appendChild(element);
-  this._itemsDiv.appendChild(itemWrapper);
+  this._itemsDiv.appendChild(element);
   
   this._itemsCountdown -= 1;
   if (this._itemsCountdown == 0) {
     // All items ready.
    
-    //this._recalculateScale();
-    
     // Make items visible.
     for (var i = 0; i < this._items.length; ++i) {
       var element = this._items[i].getElement();
       element.style.display = "block";
     }
 
-    //this._resetItemLayout();
+    this._resetLayout();
   }
 };
 
-RankingTask.prototype._recalculateScale = function() {
-  // todo: skip if fundamentals have not changed, or call only on relevant change events
+RankingTask.prototype._resetLayout = function() {
 
-  var qBB = this._question.getBoundingClientRect();
-  console.log("qBB...");
-  console.log(qBB);
-
+  var questionBB = this._question.getBoundingClientRect();
   var innerBB = this._innerDiv.getBoundingClientRect();
-  console.log("innerBB...");
-  console.log(innerBB);
 
-  this._margin = qBB.left - innerBB.left;
-
-  //this._itemsDiv.style.left = this._margin + "px";
-  //this._itemsDiv.style.top = this._margin + "px";
-  //this._itemsDiv.style.width = qBB.width + "px";
- 
-  // When height is restricted the height of itemsDiv and innerDiv is deteremined later, after
+  this._margin = questionBB.left - innerBB.left;
+  
+  // When height is restricted the height of itemsDiv and innerDiv is determined later, after
   //  inspecting all the items.
   if (this._heightIsRestricted) {
-    this._itemsDiv.style.height = (innerBB.height - 3*this._margin - qBB.height) + "px";
+    this._itemsDiv.style.height = (innerBB.height - 3*this._margin - questionBB.height) + "px";
   }
 
   var itemsBB = this._itemsDiv.getBoundingClientRect();
-  console.log("itemsBB...");
-  console.log(itemsBB);
-
 
   // Review the unscaled sizes of the items.
   var widthSum = 0.0;
@@ -135,8 +126,6 @@ RankingTask.prototype._recalculateScale = function() {
       maxHeight = size.height;
     }
   }
-
-  console.log("max image height: "+maxHeight);
 
   // Calculate the max scale such that all items fit vertically.
   var maxHeightScale = 1.0;
@@ -166,23 +155,22 @@ RankingTask.prototype._recalculateScale = function() {
     if (h > maxHeight) maxHeight = h;
   }
   widthSum += this._margin*(this._items.length - 1);
-  this._itemsStartX = (itemsBB.width - widthSum)/2.0;
-  this._itemsMidlineY = (itemsBB.height/2.0);
-  this._itemsMinX = itemsBB.left - this.dragMarginIncursion*this._margin;
-  this._itemsMaxX = itemsBB.left + itemsBB.width + this.dragMarginIncursion*this._margin;
 
-  if (!this._heightIsRestricted) {
+  // Set quantities used for item layout.
+  if (this._heightIsRestricted) {
+    this._itemsMidlineY = (itemsBB.height/2.0);
+  } else {
     this._itemsDiv.style.height = maxHeight + "px";
     this._itemsMidlineY = maxHeight/2.0;
   }
+  this._itemsStartX = (itemsBB.width - widthSum)/2.0;
+  this._itemsMinX = -this.dragMarginIncursion*this._margin;
+  this._itemsMaxX = itemsBB.width + this.dragMarginIncursion*this._margin;
 
-  console.log("itemsStartX: "+this._itemsStartX);
-  console.log("itemsMidlineY: "+this._itemsMidlineY);
-  console.log("itemsMinX: " + this._itemsMinX);
-  console.log("itemsMaxX: " + this._itemsMaxX);
+  this._updateLayout();
 };
 
-RankingTask.prototype._resetItemLayout = function() {
+RankingTask.prototype._updateLayout = function() {
   var x = this._itemsStartX;
   for (var i = 0; i < this._items.length; ++i) {
     var item = this._items[i];
@@ -191,29 +179,26 @@ RankingTask.prototype._resetItemLayout = function() {
     var y = this._itemsMidlineY - (bb.height/2.0);
     element.style.left = x + "px";
     element.style.top = y + "px";
-//    console.log(item.getID());
-//    console.log(bb);
-//    console.log(" x: "+x);
-//    console.log(" y: "+y);
     x += bb.width + this._margin;
     element.style.zIndex = i;
   }
   this._nextZIndex = this._items.length;
 };
-    
+
 RankingTask.prototype._dragStart = function(e, item) {
-//  console.log("mousedown, "+item.getID());
+
   var element = item.getElement();
   var itemBB = element.getBoundingClientRect();
-//  console.log(" itemBB.left: "+itemBB.left);
-//  console.log(" mouse: "+e.clientX+", "+e.clientY);
+  var itemsBB = this._itemsDiv.getBoundingClientRect();
 
+  // Bring to front.
   element.style.zIndex = this._nextZIndex;
   this._nextZIndex += 1;
 
+  // The drag offset includes both the mouse offset and the correction needed
+  //   to convert the viewport coordinate to the container (itemsDiv) coordinate.
+  this._dragOffsetX = e.clientX - itemBB.left + itemsBB.left;
   this._dragItem = item;
-  this._dragInitMouseX = e.clientX;
-  this._dragInitX = itemBB.left;
   this._dragMinX = this._itemsMinX;
   this._dragMaxX = this._itemsMaxX - itemBB.width;
 
@@ -225,7 +210,6 @@ RankingTask.prototype._dragStart = function(e, item) {
   }
 
   function onMouseUpOrOutProxy(e) {
-    console.log(e);
     rt._dragStop(e);
     document.removeEventListener("mousemove", onMouseMoveProxy);
     document.removeEventListener("mouseup", onMouseUpOrOutProxy);
@@ -236,14 +220,14 @@ RankingTask.prototype._dragStart = function(e, item) {
   document.addEventListener("mousemove", onMouseMoveProxy);
   document.addEventListener("mouseup", onMouseUpOrOutProxy);
   document.addEventListener("mouseleave", onMouseUpOrOutProxy);
-  
 };
 
 RankingTask.prototype._dragUpdate = function(e) {
-//  console.log("onMouseMove");
+
   var element = this._dragItem.getElement();
 
-  var x = this._dragInitX + e.clientX - this._dragInitMouseX;
+  var x = e.clientX - this._dragOffsetX;
+  
   if (x < this._dragMinX) {
     x = this._dragMinX;
   } else if (x > this._dragMaxX) {
@@ -254,9 +238,6 @@ RankingTask.prototype._dragUpdate = function(e) {
 };
 
 RankingTask.prototype._dragStop = function(e) {
-//  console.log("onMouseUp");
-
-  var element = this._dragItem.getElement();
 };
 
 
@@ -267,23 +248,29 @@ RankingTask.prototype._dragStop = function(e) {
 function RTImageItem(parent, id, src) {
   this._parent = parent;
   this._id = id;
+
+  this._element = document.createElement("div");
+  this._element.className = "rt-item-div";
+   
   this._img = document.createElement("img");
   var item = this;
   this._img.addEventListener("load", function(e) {item._onLoad(e);});
   this._img.className = "rt-item-img";
   this._img.src = src;
-}
 
-RTImageItem.prototype._onLoad = function(e) {
-  this._rawWidth = this._img.width;
-  this._rawHeight = this._img.height;
-  var parent = this._parent;
   var item = this;
   function onMouseDownProxy(e) {
     parent._dragStart(e, item);
     e.preventDefault();
   }
-  this._img.addEventListener("mousedown", onMouseDownProxy);
+  this._element.addEventListener("mousedown", onMouseDownProxy);
+
+  this._element.appendChild(this._img);
+}
+
+RTImageItem.prototype._onLoad = function(e) {
+  this._rawWidth = this._img.width;
+  this._rawHeight = this._img.height;
   this._parent._itemIsReady(this);
 };
 
@@ -296,7 +283,7 @@ RTImageItem.prototype.getID = function() {
 };
 
 RTImageItem.prototype.getElement = function() {
-  return this._img;
+  return this._element;
 };
 
 
