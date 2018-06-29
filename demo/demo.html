@@ -5,10 +5,13 @@
 <title>Ranking Task Demo</title>
 
 <link rel="stylesheet" type="text/css" href="../rt.css">
+<script src="../lib/url-polyfill.js"></script>
 <script src="../lib/ResizeSensor.js"></script>
-<!--<script src="../lib/ElementQueries.js"></script>-->
 </head>
 <body>
+
+<p>Demo v0.0.4; Thursday, 28 June 2018</p>
+
 <p>The stand-alone ranking task player (a separate html page) is embedded below in an iframe with dimensions of 700x200 px.</p>
 
 <iframe width="700" height="200" src="../rt.html" style="border: none"></iframe>
@@ -29,12 +32,13 @@
 
 <script src="../rt.js"></script>
 <script>
-var rt2 = document.getElementById("rt2");
-rt2 = new RankingTask(rt2, "");
-rt2.initWithXML("blah");
-var rt3 = document.getElementById("rt3");
-rt3 = new RankingTask(rt3, "");
-rt3.initWithXML("blah");
+
+var rt2 = new RankingTask(document.getElementById("rt2"));
+rt2.initWithURL("demo.xml", "usaCurrCoins");
+
+var rt3 = new RankingTask(document.getElementById("rt3"));
+rt3.initWithURL("demo.xml", "usaCurrCoins");
+
 </script>
 
 </body>

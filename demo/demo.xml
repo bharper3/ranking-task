@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bank>
+<rankingTask id="test01">
+</rankingTask>
+<rankingTask id="usaCurrCoins">
+  <question>Rank the coins by increasing value.</question>
+<!--  <defaultNumSelected>4</defaultNumSelected> -->
+  <items>
+    <item id="penny">
+      <type>image</type>
+      <src>penny.png</src>
+      <value>1</value>
+    </item>
+    <item id="nickel">
+      <type>image</type>
+      <src>nickel.png</src>
+      <value>5</value>
+    </item>
+    <item id="dime">
+      <type>image</type>
+      <src>dime.png</src>
+      <value>10</value>
+    </item>
+    <item id="quarter">
+      <type>image</type>
+      <src>quarter.png</src>
+      <value>25</value>
+    </item>
+  </items>
+</rankingTask>
+<rankingTask id="test03">
+</rankingTask>
+</bank>

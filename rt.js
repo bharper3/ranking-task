@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.3 (in active development)
- * 27 June 2018
+ * v0.0.4 (in active development)
+ * 28 June 2018
 */
 
 
@@ -10,16 +10,17 @@
  *  RankingTask
  */
 
-function RankingTask(rootElement, prefixKludge) {
+function RankingTask(rootElement) {
 
-  this._prefix = prefixKludge; // todo: remove
-
-  this.animationMilliseconds = 200;
+  // The amount of time an item will take to animate to its rest position may vary
+  //  depending on its current distance from that position. Regardless of the formula
+  //  used, the animation duration will always be between these limits.
+  this.minAnimationMilliseconds = 100;
+  this.maxAnimationMilliseconds = 200;
 
   // dragMarginIncursion -- defines the drag limits of an item as a fraction of
   //  the margin around the items' area (rt-items-div)
   this.dragMarginIncursion = 0.75;
-
 
   // todo: verify rootElement is a div with correct class, and log meaningful
   //  error if it is not
@@ -45,12 +46,18 @@ function RankingTask(rootElement, prefixKludge) {
   this._itemsDiv.className = "rt-items-div";
   this._innerDiv.appendChild(this._itemsDiv);
 
-  var id = this._rootElement.id;
   var rt = this;
   this._resizeSensor = new ResizeSensor(this._itemsDiv, function() {
-    //console.log("ResizeSensor called for "+id);
+    //console.log("ResizeSensor called for "+rt._rootElement.id);
+    if (!rt._isReady) {
+      return;
+    }
     rt._resetLayout();
+    rt._calcRestPositions();
+    rt._snapItemsToRest();
   });
+
+  
 }
 
 RankingTask.prototype._removeChildren = function(element) {
@@ -59,32 +66,132 @@ RankingTask.prototype._removeChildren = function(element) {
   }
 };
 
-RankingTask.prototype._init = function() {
-  this._isReady = false;
-  this._removeChildren(this._itemsDiv);
+RankingTask.prototype.initWithURL = function(xmlURL, rankingTaskID) {
+  // Initializes the ranking task with an XML file.
+  // xmlURL is the XML file that may contain multiple rankingTask nodes.
+  // rankingTaskID is the unique id attribute of the rankingTask node to use. 
+
+  this._xmlReq = new XMLHttpRequest();
+
+  var rt = this;
+  this._onXMLLoadProxy = function() {
+    rt._onXMLLoad(rankingTaskID);
+  };
+  this._xmlReq.addEventListener("load", this._onXMLLoadProxy);
+  this._xmlReq.open("GET", xmlURL);
+  this._xmlReq.send();
 };
 
-RankingTask.prototype.initWithXML = function(xmlURL) {
-
-  this._init();
-
-  this._question.textContent = "Rank the coins by increasing value. This is a longer sentence in order to achieve wrap-around. The previous sentence may not be long enough, so this sentence has been added.";
-
-  var images = [this._prefix+"penny.png", this._prefix+"nickel.png", this._prefix+"dime.png", this._prefix+"quarter.png"];
+RankingTask.prototype._onXMLLoad = function(rankingTaskID) {
+  // Called when the XML file has loaded.
+  // This function simply converts the relevant XML node to a JavaScript object
+  //  and passes it on to initWithObject().
  
-  this._itemsCountdown = images.length;
+  var obj = {id: rankingTaskID};
 
-  // The order of the items in the _items array will be the answer order.
-  this._items = [];
+  var rtXML = this._xmlReq.responseXML.getElementById(rankingTaskID);
 
-  for (var i = 0; i < images.length; ++i) {
-    var src = images[i];
-    var item = new RTImageItem(this, src, src);
-    item._rt_isAnimating = false;
-    item._rt_isBeingDragged = false;
-    this._items.push(item);
+  obj.question = rtXML.getElementsByTagName("question")[0].childNodes[0].nodeValue;
+  
+  var defNumSel = rtXML.getElementsByTagName("defaultNumSelected");
+  if (defNumSel.length > 0) {
+    obj.defaultNumSelected = defNumSel[0].childNodes[0].nodeValue;
+  }
+ 
+  var itemsXML = rtXML.getElementsByTagName("items")[0].getElementsByTagName("item");
+
+  obj.items = [];
+  for (var i = 0; i < itemsXML.length; ++i) {
+    var itemXML = itemsXML[i];
+    var item = {};
+    item.id = itemXML.id;
+    item.type = itemXML.getElementsByTagName("type")[0].childNodes[0].nodeValue;
+    item.value = itemXML.getElementsByTagName("value")[0].childNodes[0].nodeValue;
+    item.src = itemXML.getElementsByTagName("src")[0].childNodes[0].nodeValue;
+    obj.items.push(item);    
   }
 
+  // The baseURL is set to the directory of the XML file.
+  var baseURL = "";
+  var i = this._xmlReq.responseURL.lastIndexOf("/");
+  if (i >= 0) {
+    baseURL = this._xmlReq.responseURL.slice(0, i+1);
+  }
+  
+  this._xmlReq.removeEventListener("load", this._onXMLLoadProxy); 
+  this._xmlReq = null;
+
+  this.initWithObject(obj, baseURL); 
+};
+
+RankingTask.prototype.initWithObject = function(obj, baseURL) {
+  // Initializes the ranking task with a JavaScript object.
+  // The baseURL is used to expand relative resource urls (e.g. an image's source).
+  //  Pass an empty string for baseURL to skip this step (i.e. leave it up to the browser).
+  // The object is expected to have these properties:
+  //   id
+  //   question
+  //   items (an array)
+  //   defaultNumSelected (optional) - a number
+  // Each item is expected to have
+  //   id - uniquely identifies the item within the items list
+  //   type - may be "image"
+  //   value (optional) - a number
+  // If type is image then the item is expected to have
+  //   src - the url for the image
+  
+  this._isReady = false;
+  this._removeChildren(this._itemsDiv);
+
+  this._question.textContent = obj.question;
+
+  // Randomize the order of items (the complete list).
+  var shuffledItems = this._shuffle(obj.items);
+  
+  // Select a subset of items, if specified.
+  var numSelected = shuffledItems.length;
+  if (obj.defaultNumSelected !== undefined) {
+    var n = parseInt(obj.defaultNumSelected);
+    if (n >= 2 && n < shuffledItems.length) {
+      numSelected = n;
+    }
+  }
+  var selectedItems = shuffledItems.slice(0, numSelected);
+
+  // Create and load the selected items.
+  this._itemsCountdown = selectedItems.length;
+  this._items = [];
+  for (var i = 0; i < this._itemsCountdown; ++i) {
+    var itemObj = selectedItems[i];
+    if (itemObj.type == "image") {
+      const url = new URL(itemObj.src, baseURL);
+      var item = new RTImageItem(this, itemObj.id, url.toString());
+      item._rt_isAnimating = false;
+      item._rt_isBeingDragged = false;
+      this._items.push(item);
+    }
+  }
+};
+
+RankingTask.prototype._shuffle = function(array) {
+  // Copied from https://stackoverflow.com/a/2450976 (28 June 2018).
+  
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
 };
 
 RankingTask.prototype._itemIsReady = function(item) {
@@ -93,6 +200,28 @@ RankingTask.prototype._itemIsReady = function(item) {
   item._rt_element = item.getElement();
   item._rt_element.style.display = "none";
   this._itemsDiv.appendChild(item._rt_element);
+
+  // Add mouse event listeners for dragging to the item.
+  var rt = this;
+  item._rt_onMouseMoveProxy = function(e) {
+    rt._updateDrag(item, e.clientX);
+    e.preventDefault();
+  }
+  item._rt_onMouseFinishedProxy = function(e) {
+    rt._stopDrag(item);
+    document.removeEventListener("mousemove", item._rt_onMouseMoveProxy);
+    document.removeEventListener("mouseup", item._rt_onMouseFinishedProxy);
+    document.removeEventListener("mouseleave", item._rt_onMouseFinishedProxy);
+    e.preventDefault();
+  }
+  item._rt_onMouseDownProxy = function(e) {
+    rt._startDrag(item, e.clientX);
+    document.addEventListener("mousemove", item._rt_onMouseMoveProxy);
+    document.addEventListener("mouseup", item._rt_onMouseFinishedProxy);
+    document.addEventListener("mouseleave", item._rt_onMouseFinishedProxy);
+    e.preventDefault();
+  }
+  item._rt_element.addEventListener("mousedown", item._rt_onMouseDownProxy);
   
   this._itemsCountdown -= 1;
   if (this._itemsCountdown == 0) {
@@ -116,10 +245,6 @@ RankingTask.prototype._itemIsReady = function(item) {
 RankingTask.prototype._resetLayout = function() {
   // This function resets the layout from scratch. It does everything except positioning
   //  the items horizontally.
-
-  if (!this._isReady) {
-    return;
-  }
 
   var questionBB = this._question.getBoundingClientRect();
   var innerBB = this._innerDiv.getBoundingClientRect();
@@ -191,6 +316,7 @@ RankingTask.prototype._resetLayout = function() {
   this._itemsStartX = (itemsBB.width - widthSum)/2.0;
   this._itemsMinX = -this.dragMarginIncursion*this._margin;
   this._itemsMaxX = itemsBB.width + this.dragMarginIncursion*this._margin;
+  this._itemsHalfRange = (this._itemsMaxX - this._itemsMinX)/2.0;
 
   // Position the items vertically and initialize z ordering.
   for (var i = 0; i < this._items.length; ++i) {
@@ -232,18 +358,18 @@ RankingTask.prototype._calcRestPositions = function() {
 };
 
 RankingTask.prototype._startAnimation = function(item) {
-  console.log("startAnimation for "+item.getID());
+  // This function starts or extends an item's animation to its rest position.
+  //console.log("startAnimation for "+item.getID());
+  item._rt_animStartTime = null;
   if (item._rt_isAnimating) {
-    item._rt_animStartTime = null;
     return;
   }
-  item._rt_animStartTime = null;
   item._rt_isAnimating = true;
-  this._requestAnimFrame(item);
+  this._requestFrame(item);
 };
 
-RankingTask.prototype._requestAnimFrame = function(item) {
-  // Requests an animation frame for an item (each item is animated separately).
+RankingTask.prototype._requestFrame = function(item) {
+  // This helper function is meant to be called only by _startAnimation() and _onFrame().
   var rt = this;
   function onFrameProxy(n) {
     rt._onFrame(item, n);
@@ -252,7 +378,7 @@ RankingTask.prototype._requestAnimFrame = function(item) {
 };
 
 RankingTask.prototype._stopAnimation = function(item) {
-  // This function stops an item's animation immediately. The item's position
+  // This function stops an item's animation immediately. The item's screen position
   //  will not be changed (it remains wherever the animation left it).
   if (!item._rt_isAnimating) {
     return;
@@ -262,39 +388,47 @@ RankingTask.prototype._stopAnimation = function(item) {
 };
 
 RankingTask.prototype._onFrame = function(item, now) {
+  // This function is called for each animating item.
   //console.log("onFrame for "+item.getID()+", now: "+now);
 
   if (item._rt_animStartTime === null) {
     // The animation is starting, or has been extended.
     // Calculate the animation parameters.
+    
+    // Currently using linear animation with duration a function of the distance.
+    // todo: change to more naturalistic/pleasing tweening effect
+
     item._rt_animStartTime = now;
     item._rt_anim_m = item._rt_restX - item._rt_currX;
     item._rt_anim_b = item._rt_currX;
+
+    var t = this.minAnimationMilliseconds + this.maxAnimationMilliseconds*Math.abs(item._rt_anim_m)/this._itemsHalfRange;
+    t = Math.max(this.minAnimationMilliseconds, t);
+    item._rt_animDuration = Math.min(this.maxAnimationMilliseconds, t);
   }
 
-  item._rt_animPrevTime = now;
-
-  var u = (now - item._rt_animStartTime)/this.animationMilliseconds;
+  var u = (now - item._rt_animStartTime)/item._rt_animDuration;
   if (u > 1.0) {
     u = 1.0;
   }
 
   // Move the item.
-  item._rt_currX = u*item._rt_anim_m + item._rt_anim_b;
-  item._rt_currCtrX = item._rt_currX + item._rt_halfWidth;
-  item._rt_element.style.left = item._rt_currX + "px";
+  var x = u*item._rt_anim_m + item._rt_anim_b;
+  item._rt_currX = x;
+  item._rt_currCtrX = x + item._rt_halfWidth;
+  item._rt_element.style.left = x + "px";
 
   if (u < 1.0) {
     // Continue animating.
-    this._requestAnimFrame(item);
+    this._requestFrame(item);
   } else {
     // Stop animating.
     item._rt_isAnimating = false;
-    console.log("animation done for "+item.getID());
+    //console.log("animation done for "+item.getID());
   }
 };
 
-RankingTask.prototype._startDrag = function(item, e) {
+RankingTask.prototype._startDrag = function(item, pointerX) {
 
   if (item._rt_isBeingDragged) {
     return;
@@ -309,44 +443,19 @@ RankingTask.prototype._startDrag = function(item, e) {
   item._rt_element.style.zIndex = this._nextZIndex;
   this._nextZIndex += 1;
 
-  // The drag offset includes both the mouse offset and the correction needed
+  // The drag offset includes both the pointer offset and the correction needed
   //  to convert the viewport coordinate to the container (itemsDiv) coordinate.
   var itemBB = item._rt_element.getBoundingClientRect();
   var itemsBB = this._itemsDiv.getBoundingClientRect();
-  item._rt_dragOffsetX = e.clientX - itemBB.left + itemsBB.left;
+  item._rt_dragOffsetX = pointerX - itemBB.left + itemsBB.left;
   item._rt_dragMinX = this._itemsMinX;
   item._rt_dragMaxX = this._itemsMaxX - itemBB.width;
-
-  //console.log(item._rt_dragOffsetX+", "+item._rt_dragMinX+", "+item._rt_dragMaxX);
-  
-  // todo: these proxies could be defined once on the item during the is ready handler
-  
-  var rt = this;
-
-  item._rt_onMouseMoveProxy = function(e) {
-    //console.log("mouse move, "+item.getID());
-    rt._updateDrag(item, e);
-    e.preventDefault();
-  }
-
-  item._rt_onMouseUpOrOutProxy = function(e) {
-    //console.log("mouse up or out, "+item.getID());
-    rt._stopDrag(item);
-    document.removeEventListener("mousemove", item._rt_onMouseMoveProxy);
-    document.removeEventListener("mouseup", item._rt_onMouseUpOrOutProxy);
-    document.removeEventListener("mouseleave", item._rt_onMouseUpOrOutProxy);
-    e.preventDefault();
-  }
-
-  document.addEventListener("mousemove", item._rt_onMouseMoveProxy);
-  document.addEventListener("mouseup", item._rt_onMouseUpOrOutProxy);
-  document.addEventListener("mouseleave", item._rt_onMouseUpOrOutProxy);
 };
 
-RankingTask.prototype._updateDrag = function(item, e) {
+RankingTask.prototype._updateDrag = function(item, pointerX) {
 
   // Determine the item's new drag position and move it.
-  var x = e.clientX - item._rt_dragOffsetX;
+  var x = pointerX - item._rt_dragOffsetX;
   if (x < item._rt_dragMinX) {
     x = item._rt_dragMinX;
   } else if (x > item._rt_dragMaxX) {
@@ -362,6 +471,17 @@ RankingTask.prototype._updateDrag = function(item, e) {
   this._updateFromScreen();
 };
 
+RankingTask.prototype._stopDrag = function(item) {
+  if (!item._rt_isBeingDragged) {
+    return;
+  }
+  item._rt_isBeingDragged = false; 
+  this._updateFromScreen();
+
+  // todo: revisit
+  this._startAnimation(item);
+};
+
 RankingTask.prototype._updateFromScreen = function() {
   // This function updates the answer order (the order of the _items array) based on
   //  the items' current screen positions (_rt_currCtrX properties).
@@ -370,7 +490,7 @@ RankingTask.prototype._updateFromScreen = function() {
   
   // Save the pre-update answer order.
   for (var i = 0; i < this._items.length; ++i) {
-    this._items[i]._rt_index = i;
+    this._items[i]._rt_prevIndex = i;
   }
 
   // Sort the items according to their current screen positions.
@@ -388,24 +508,12 @@ RankingTask.prototype._updateFromScreen = function() {
     if (item._rt_isBeingDragged) {
       continue;
     }
-    if (item._rt_index != i) {
+    if (item._rt_prevIndex != i) {
       // The item has changed position.
       this._startAnimation(item);
     }
   }
 };
-
-RankingTask.prototype._stopDrag = function(item) {
-  if (!item._rt_isBeingDragged) {
-    return;
-  }
-  item._rt_isBeingDragged = false; 
-  this._updateFromScreen();
-
-  // todo: revisit
-  this._startAnimation(item);
-};
-
 
 
 /*
@@ -420,22 +528,21 @@ function RTImageItem(parent, id, src) {
   this._element.className = "rt-item-div";
    
   this._img = document.createElement("img");
-  var item = this;
-  this._img.addEventListener("load", function(e) {item._onLoad(e);});
-  this._img.className = "rt-item-img";
-  this._img.src = src;
 
   var item = this;
-  function onMouseDownProxy(e) {
-    parent._startDrag(item, e);
-    e.preventDefault();
-  }
-  this._element.addEventListener("mousedown", onMouseDownProxy);
+  this._onLoadProxy = function(e) {
+    item._onLoad(e);
+  };
+
+  this._img.addEventListener("load", this._onLoadProxy);
+  this._img.className = "rt-item-img";
+  this._img.src = src;
 
   this._element.appendChild(this._img);
 }
 
 RTImageItem.prototype._onLoad = function(e) {
+  this._img.removeEventListener("load", this._onLoadProxy);
   this._rawWidth = this._img.width;
   this._rawHeight = this._img.height;
   this._parent._itemIsReady(this);
