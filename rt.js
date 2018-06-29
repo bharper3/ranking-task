@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.4 (in active development)
- * 28 June 2018
+ * v0.0.5 (in active development)
+ * 29 June 2018
 */
 
 
@@ -27,6 +27,7 @@ function RankingTask(rootElement) {
   
   this._removeChildren(rootElement);
   this._rootElement = rootElement;
+  this._htmlID = this._rootElement.id;
 
   // _heightIsRestricted determines whether to limit the height of content.
   this._heightIsRestricted = (this._rootElement.clientHeight > 0);
@@ -46,7 +47,30 @@ function RankingTask(rootElement) {
   this._itemsDiv.className = "rt-items-div";
   this._innerDiv.appendChild(this._itemsDiv);
 
+
+  this._footer = document.createElement("div");
+  this._footer.className = "rt-footer";
+  this._innerDiv.appendChild(this._footer);
+
+  this._feedback = document.createElement("div");
+  this._feedback.className = "rt-feedback";
+
+  this._gradeButton = document.createElement("button");
+  this._gradeButton.className = "rt-grade-button";
+  this._gradeButton.type = "button";
+  this._gradeButton.name = "grade";
+  this._gradeButton.textContent = "Grade";
+  this._footer.appendChild(this._gradeButton);
+
+  this._footer.appendChild(this._feedback);
+
   var rt = this;
+
+  function onClickProxy(e) {
+    rt._onGradeButtonClick();
+  } 
+  this._gradeButton.addEventListener("click", onClickProxy);
+
   this._resizeSensor = new ResizeSensor(this._itemsDiv, function() {
     //console.log("ResizeSensor called for "+rt._rootElement.id);
     if (!rt._isReady) {
@@ -56,7 +80,6 @@ function RankingTask(rootElement) {
     rt._calcRestPositions();
     rt._snapItemsToRest();
   });
-
   
 }
 
@@ -93,9 +116,9 @@ RankingTask.prototype._onXMLLoad = function(rankingTaskID) {
 
   obj.question = rtXML.getElementsByTagName("question")[0].childNodes[0].nodeValue;
   
-  var defNumSel = rtXML.getElementsByTagName("defaultNumSelected");
-  if (defNumSel.length > 0) {
-    obj.defaultNumSelected = defNumSel[0].childNodes[0].nodeValue;
+  var numToSelectArr = rtXML.getElementsByTagName("numToSelect");
+  if (numToSelectArr.length > 0) {
+    obj.numToSelect = numToSelectArr[0].childNodes[0].nodeValue;
   }
  
   var itemsXML = rtXML.getElementsByTagName("items")[0].getElementsByTagName("item");
@@ -124,6 +147,110 @@ RankingTask.prototype._onXMLLoad = function(rankingTaskID) {
   this.initWithObject(obj, baseURL); 
 };
 
+RankingTask.prototype._reset = function(obj, baseURL) {
+
+  this._isReady = false;
+  this._removeChildren(this._itemsDiv);
+
+  if (typeof baseURL !== "string" || baseURL == "") {
+    baseURL = null;
+  }
+
+  this._question.textContent = obj.question;
+
+  // Randomize the order of items (the complete list).
+  var shuffledItems = this._shuffle(obj.items);
+  
+  // Select a subset of items, if specified.
+  var numToSelect = parseInt(obj.numToSelect);
+  if (Number.isNaN(numToSelect) || numToSelect < 2 || numToSelect > shuffledItems.length) {
+    // todo: warn if numToSelect is defined but not valid
+    numToSelect = shuffledItems.length;
+  }
+  var selectedItems = shuffledItems.slice(0, numToSelect);
+
+  var allowGrading = true;
+
+  // Create and load the selected items.
+  this._itemsCountdown = selectedItems.length;
+  this._items = [];
+  for (var i = 0; i < this._itemsCountdown; ++i) {
+    var itemObj = selectedItems[i];
+    var itemID = (itemObj.id !== undefined) ? itemObj.id : ""; 
+
+    var context = "rankingTask ID: " + obj.id + ", item ID: " + itemID;
+
+    var itemValue = parseFloat(itemObj.value);
+    if (allowGrading && Number.isNaN(itemValue)) {
+      allowGrading = false;
+      this._reportWarning(context, "Grading is not possible since an item does not have a valid value.");
+    }
+    
+    if (itemObj.type == "image") {
+      if (itemObj.src === undefined) {
+        this._reportException(context, "An image item is missing the required src property.");
+        return;
+      } 
+      var item;
+      if (baseURL !== null) {
+        const urlObj = new URL(itemObj.src, baseURL);
+        item = new RTImageItem(this, itemID, urlObj.toString());
+      } else {
+        item = new RTImageItem(this, itemID, itemObj.src);
+      }
+      item._rt_value = itemValue;
+      item._rt_isAnimating = false;
+      item._rt_isBeingDragged = false;
+      this._items.push(item);
+    } else {
+      this._reportException(context+", type: \""+itemObj.type+"\"", "An item has an invalid type property.");
+      return;
+    }
+  }
+
+  this._gradeButton.textContent = "Grade";
+  if (allowGrading) {
+    this._gradeButton.disabled = false;
+  } else {
+    this._gradeButton.disabled = true;
+  }
+
+  this._feedback.textContent = "";
+
+  this._answerMode = false;
+};
+
+RankingTask.prototype._onGradeButtonClick = function() {
+  if (this._answerMode) {
+    this._reset(this._resetObj, this._resetBaseURL);
+  } else {
+    this._cancelAllDragging();
+    this._grade();
+    this._gradeButton.textContent = "Reset";
+    this._gradeButton.name = "reset";
+    this._gradeButton.disabled = false;  
+  }
+};
+
+RankingTask.prototype._grade = function() {
+  // todo: revise structure
+  console.log("grade");
+  this._answerMode = true;
+
+  // todo: make more helpful
+
+  var prevValue = this._items[0]._rt_value;
+  for (var i = 1; i < this._items.length; ++i) {
+    if (prevValue > this._items[i]._rt_value) {
+      this._feedback.textContent = "Incorrect!";
+      return;
+    }
+    prevValue = this._items[i]._rt_value;
+  }
+
+  this._feedback.textContent = "Correct!";  
+};
+
 RankingTask.prototype.initWithObject = function(obj, baseURL) {
   // Initializes the ranking task with a JavaScript object.
   // The baseURL is used to expand relative resource urls (e.g. an image's source).
@@ -132,45 +259,31 @@ RankingTask.prototype.initWithObject = function(obj, baseURL) {
   //   id
   //   question
   //   items (an array)
-  //   defaultNumSelected (optional) - a number
+  //   numToSelect (optional)
   // Each item is expected to have
-  //   id - uniquely identifies the item within the items list
-  //   type - may be "image"
+  //   id (optional) - uniquely identifies the item within the items list
+  //   type - valid options: "image"
   //   value (optional) - a number
   // If type is image then the item is expected to have
   //   src - the url for the image
-  
-  this._isReady = false;
+ 
+  this._resetObj = Object.assign({}, obj);
+  this._resetBaseURL = baseURL;
+
+  // todo: revise reset mechanism
+  this._reset(this._resetObj, this._resetBaseURL);
+
+};
+
+RankingTask.prototype._reportWarning = function(context, message) {
+  console.warn("RankingTask, html ID: "+this._htmlID+", "+context+", "+message);
+};
+
+RankingTask.prototype._reportException = function(message) {
+  console.error("RankingTask, html ID: "+this._htmlID+", "+context+", "+message);
   this._removeChildren(this._itemsDiv);
-
-  this._question.textContent = obj.question;
-
-  // Randomize the order of items (the complete list).
-  var shuffledItems = this._shuffle(obj.items);
-  
-  // Select a subset of items, if specified.
-  var numSelected = shuffledItems.length;
-  if (obj.defaultNumSelected !== undefined) {
-    var n = parseInt(obj.defaultNumSelected);
-    if (n >= 2 && n < shuffledItems.length) {
-      numSelected = n;
-    }
-  }
-  var selectedItems = shuffledItems.slice(0, numSelected);
-
-  // Create and load the selected items.
-  this._itemsCountdown = selectedItems.length;
-  this._items = [];
-  for (var i = 0; i < this._itemsCountdown; ++i) {
-    var itemObj = selectedItems[i];
-    if (itemObj.type == "image") {
-      const url = new URL(itemObj.src, baseURL);
-      var item = new RTImageItem(this, itemObj.id, url.toString());
-      item._rt_isAnimating = false;
-      item._rt_isBeingDragged = false;
-      this._items.push(item);
-    }
-  }
+  this._question.textContent = message;
+  // todo: revise structure 
 };
 
 RankingTask.prototype._shuffle = function(array) {
@@ -247,6 +360,7 @@ RankingTask.prototype._resetLayout = function() {
   //  the items horizontally.
 
   var questionBB = this._question.getBoundingClientRect();
+  var footerBB = this._footer.getBoundingClientRect();
   var innerBB = this._innerDiv.getBoundingClientRect();
 
   this._margin = questionBB.left - innerBB.left;
@@ -254,7 +368,7 @@ RankingTask.prototype._resetLayout = function() {
   // When height is unrestricted the height of itemsDiv is determined later, after
   //  inspecting all the items.
   if (this._heightIsRestricted) {
-    this._itemsDiv.style.height = (innerBB.height - 3*this._margin - questionBB.height) + "px";
+    this._itemsDiv.style.height = (innerBB.height - 4*this._margin - questionBB.height - footerBB.height) + "px";
   }
 
   var itemsBB = this._itemsDiv.getBoundingClientRect();
@@ -331,17 +445,23 @@ RankingTask.prototype._resetLayout = function() {
 
 };
 
+RankingTask.prototype._cancelAllDragging = function() {
+  for (var i = 0; i < this._items.length; ++i) {
+    var item = this._items[i];
+    this._stopDrag(item);
+  }
+};
+
 RankingTask.prototype._snapItemsToRest = function() {
   // This function will snap all items to their final rest positions (_rt_restX),
   //  cancelling all active animations and dragging.
   for (var i = 0; i < this._items.length; ++i) {
     var item = this._items[i];
-    var element = item._rt_element;
     this._stopAnimation(item);
     this._stopDrag(item);
     item._rt_currX = item._rt_restX;
     item._rt_currCtrX = item._rt_restX + item._rt_halfWidth;
-    element.style.left = item._rt_restX + "px";
+    item._rt_element.style.left = item._rt_restX + "px";
   }
 };
 
@@ -429,6 +549,10 @@ RankingTask.prototype._onFrame = function(item, now) {
 };
 
 RankingTask.prototype._startDrag = function(item, pointerX) {
+
+  if (this._answerMode) {
+    return;
+  }
 
   if (item._rt_isBeingDragged) {
     return;

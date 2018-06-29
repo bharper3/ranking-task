@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - CSS
  * astro.unl.edu
- * v0.0.4 (in active development)
- * 28 June 2018
+ * v0.0.5 (in active development)
+ * 29 June 2018
  */
 
 .rt-root-div {
@@ -39,5 +39,24 @@
 .rt-item-img {
   width: 100%;
   height: 100%;
+}
+
+.rt-footer {
+  position: relative;
+  margin: 1em;
+  display: flex;
+  flex-direction: row-reverse;
+/*  background-color: orange;*/
+}
+
+.rt-feedback {
+  margin: 0em 1em 0em 0em;
+  float: right;
+/*  background-color: lightgray;*/
+}
+
+.rt-grade-button {
+  margin: 0em;
+  float: right;
 }
 

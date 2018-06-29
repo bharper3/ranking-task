@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Non-XML Demo</title>
+<link rel="stylesheet" type="text/css" href="../rt.css">
+<script src="../rt.js"></script>
+<script src="../lib/url-polyfill.js"></script>
+<script src="../lib/ResizeSensor.js"></script>
+</head>
+<body>
+
+<p>Non-XML Demo; v0.0.5; 29 June 2018</p>
+
+<p>This demo uses object initialization (instead of XML initialization) so that the ranking task component can be tested offline.</p>
+
+<p>The ranking task below has an undefined width and height (so it should expand to fill available space).
+
+<div id="rt0" class="rt-root-div"></div>
+
+<p>The ranking task below has fixed dimensions of 700x200px.</p>
+
+<div id="rt1" class="rt-root-div" style="width: 700px; height: 200px"></div>
+
+<p>The ranking task below has a width of 50% (the height is undefined, so the component should expand vertically as necessary). Additionally, this ranking task has been instructed to select three items.</p>
+
+<div id="rt2" class="rt-root-div" style="width: 50%"></div>
+
+<script>
+var obj = {};
+obj.id = "";
+obj.question = "Rank the coins in ascending value.";
+obj.items = [];
+obj.items.push({id: "penny", type: "image", value: 1, src: "penny.png"});
+obj.items.push({id: "nickel", type: "image", value: 5, src: "nickel.png"});
+obj.items.push({id: "dime", type: "image", value: 10, src: "dime.png"});
+obj.items.push({id: "quarter", type: "image", value: 25, src: "quarter.png"});
+var rt0 = new RankingTask(document.getElementById("rt0"));
+rt0.initWithObject(obj, "");
+var rt1 = new RankingTask(document.getElementById("rt1"));
+rt1.initWithObject(obj, "");
+var rt2 = new RankingTask(document.getElementById("rt2"));
+obj.numToSelect = 3;
+rt2.initWithObject(obj, "");
+</script>
+
+</body>
+</html>
