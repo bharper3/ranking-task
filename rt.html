@@ -1,29 +1,41 @@
 <!--
-  Ranking Task Player (for iframe embedding)
+  Ranking Task Player
   astro.unl.edu
-  v0.0.4 (in active development)
-  28 June 2018
+  v0.0.6 (in active development)
+  30 June 2018
 -->
 <!DOCTYPE html>
 <html style="height: 100%">
 <head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ranking Task Player</title>
 <link rel="stylesheet" type="text/css" href="rt.css">
 <script src="lib/url-polyfill.js"></script>
 <script src="lib/ResizeSensor.js"></script>
 <script src="rt.js"></script>
+
 <script>
-var rt = null;
 function onLoad(e) {
-  rt = new RankingTask(document.getElementById("rt")); 
-  rt.initWithURL("demo/demo.xml", "usaCurrCoins"); // todo: get URL and rankingTaskID from query string
+  var params = (new URL(document.location)).searchParams;
+  var xmlURL = params.get("url");
+  var rtID = params.get("id");
+  if (xmlURL !== null && rtID !== null) {
+    var rt = new RankingTask(document.getElementById("rt"));
+    rt.initWithURL(xmlURL, rtID);
+  }
   window.removeEventListener("load", onLoad);
 }
 window.addEventListener("load", onLoad);
 </script>
+
 </head>
 <body style="margin: 0px; height: 100%">
-<div id="rt" class="rt-root-div" style="height: 100%"></div>
+<div id="rt" class="rt-root-div" style="height: 100%">
+<p>Use the query string to provide the address of the XML file and the <code>id</code> of the ranking task to use.</p>
+<p>Example:  <code>?url=<span style="color: #b55">http%3A%2F%2Fastrowork.siedell.com%2Frt%2Fdemo%2Fdemo.xml</span>&id=<span style="color: #55b">usaCurrCoins</span></code></p>
+<p>The parameters (<code>url</code> and <code>id</code>) must be URL encoded.</p>
+</div>
+
 </body>
 </html>
