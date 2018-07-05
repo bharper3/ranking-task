@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.5 (in active development)
- * 29 June 2018
+ * v0.0.8 (in active development)
+ * 4 July 2018
 */
 
 
@@ -314,32 +314,253 @@ RankingTask.prototype._itemIsReady = function(item) {
   item._rt_element.style.display = "none";
   this._itemsDiv.appendChild(item._rt_element);
 
-  // Add mouse event listeners for dragging to the item.
+  // Add functions and properties to the item for dragging.
   var rt = this;
+
+  // Mouse event handlers.
   item._rt_onMouseMoveProxy = function(e) {
     rt._updateDrag(item, e.clientX);
     e.preventDefault();
-  }
+  };
   item._rt_onMouseFinishedProxy = function(e) {
     rt._stopDrag(item);
-    document.removeEventListener("mousemove", item._rt_onMouseMoveProxy);
-    document.removeEventListener("mouseup", item._rt_onMouseFinishedProxy);
-    document.removeEventListener("mouseleave", item._rt_onMouseFinishedProxy);
     e.preventDefault();
-  }
+  };
   item._rt_onMouseDownProxy = function(e) {
-    rt._startDrag(item, e.clientX);
-    document.addEventListener("mousemove", item._rt_onMouseMoveProxy);
-    document.addEventListener("mouseup", item._rt_onMouseFinishedProxy);
-    document.addEventListener("mouseleave", item._rt_onMouseFinishedProxy);
-    e.preventDefault();
-  }
+    var bb = item._rt_element.getBoundingClientRect();
+    var offsetX = e.clientX - bb.left - item._rt_halfWidth;
+    var didStart = rt._startDrag(item, offsetX);
+    if (didStart) {
+      item._rt_isBeingMouseDragged = true;
+      document.addEventListener("mousemove", item._rt_onMouseMoveProxy);
+      document.addEventListener("mouseup", item._rt_onMouseFinishedProxy);
+      document.addEventListener("mouseleave", item._rt_onMouseFinishedProxy);
+      e.preventDefault();
+    }
+  };
   item._rt_element.addEventListener("mousedown", item._rt_onMouseDownProxy);
+
+  // Touch event handlers.
+  item._rt_onTouchMoveProxy = function(e) {
+    item._rt_trackAnyBackupTouches(e.changedTouches);
+    var touch = item._rt_getActiveTouch(e);
+    if (touch === null) {
+      return;
+    }
+    rt._updateDrag(item, touch.clientX);
+    e.preventDefault();
+  };
+  item._rt_onTouchFinishedProxy = function(e) {
+    item._rt_stopTrackingAnyBackupTouches(e.changedTouches);
+    var touch = item._rt_getActiveTouch(e);
+    if (touch === null) {
+      return;
+    }
+    // The currently active touch has ended, so check if there is a
+    //  suitable backup touch.
+    var backup = item._rt_selectBackupTouch();
+    if (backup !== null) {
+      // Switch to the backup touch.
+      item._rt_touchID = backup.id; 
+      rt._resetDrag(item, backup.x - item._rt_currCtrX);
+    } else {
+      // There is no backup touch, so stop dragging.
+      rt._stopDrag(item);
+    }
+  };
+  item._rt_getActiveTouch = function(e) {
+    // A helper function to get the Touch object in e.changedTouches that is
+    //  the active touch for this item, or null.
+    if (this._rt_touchID === null) {
+      console.error("getTouch called for item with no active touch (event: "+e.type+").");
+      return null;
+    }
+    for (var i = 0; i < e.changedTouches.length; ++i) {
+      var touch = e.changedTouches[i];
+      if (touch.identifier === item._rt_touchID) {
+        return touch;
+      }
+    }
+    return null;
+  };
+
+  // Backup touches stuff.
+  item._rt_startTrackingBackupTouches = function(touches) {
+    // This function starts tracking all of the given Touch objects as backup touches.
+    var itemsBB = rt._itemsDiv.getBoundingClientRect();
+    var cx = itemsBB.left;
+    var cy = itemsBB.top;
+    for (var i = 0; i < touches.length; ++i) {
+      var touch = touches[i];
+      this._rt_backupTouches.push({id: touch.identifier, x: touch.clientX - cx, y: touch.clientY - cy});
+    } 
+  };
+  item._rt_trackAnyBackupTouches = function(touches) {
+    // This function updates the positions of any backup touches that are in the
+    //  given array of Touch objects.
+    // For all backup touches...
+    var cx, cy;
+    for (var i = 0; i < this._rt_backupTouches.length; ++i) {
+      var backup = this._rt_backupTouches[i];
+       // ...check all of the given Touch objects to see if it is included.
+      for (var j = 0; j < touches.length; ++j) {
+        // If the touch is included...
+        var touch = touches[j];
+        if (touch.identifier === backup.id) {
+          // ...track it.
+          if (cx === undefined) {
+            var itemsBB = rt._itemsDiv.getBoundingClientRect();
+            cx = itemsBB.left;
+            cy = itemsBB.top;
+          }
+          backup.x = touch.clientX - cx;
+          backup.y = touch.clientY - cy;
+          break;
+        }
+      }
+    }
+  };
+  item._rt_stopTrackingAnyBackupTouches = function(touches) {
+    // If any of the given Touch objects are being tracked as backup
+    //  touches they will be removed from the backups array.
+    for (var i = this._rt_backupTouches.length - 1; i >= 0; --i) {
+      var id = this._rt_backupTouches[i].id;
+      for (var j = 0; j < touches.length; ++j) {
+        if (touches[j].identifier === id) {
+          this._rt_backupTouches.splice(i, 1);
+          break;
+        }
+      }
+    }
+  };
+  item._rt_selectBackupTouch = function() {
+    // This function searches the backup touches list to find the nearest
+    //  touch that is within the item's 'umbra' (bounding box plus a margin).
+    // If such a touch exists it is removed from the backup touches list
+    //  and is returned as an object with id, x, and y properties (x and y are
+    //  the touch's latest tracked coordinates in the itemsDiv container).
+    // If there is no such touch then the function returns null.
+    var marginFactor = 1.1;
+    var maxX = marginFactor*this._rt_halfWidth;
+    var minX = -maxX;
+    var maxY = marginFactor*this._rt_halfHeight;
+    var minY = -maxY;
+    var selR2 = Number.POSITIVE_INFINITY;
+    var selIndex = -1;
+    var selTouch = null;
+    for (var i = 0; i < this._rt_backupTouches.length; ++i) {
+      var touch = this._rt_backupTouches[i];
+      var x = touch.x - this._rt_currCtrX;
+      var y = touch.y - this._rt_currCtrY;
+      if (x < minX || x > maxX || y < minY || y > maxY) {
+        continue;
+      }
+      var r2 = x*x + y*y;
+      if (r2 < selR2) {
+        selR2 = r2;
+        selIndex = i;
+        selTouch = touch;
+      }
+    }
+    if (selIndex >= 0) {
+      // Remove the selected touch from the backups array.
+      this._rt_backupTouches.splice(selIndex, 1);
+    }
+    return selTouch;
+  };
+ 
+  item._rt_onTouchStartProxy = function(e) {
+    // This event handler is called when a touch starts on the item.
+    // Reminder: multiple touches may start simultaneously, and additional
+    //  touches may start while the item is being dragged.
+    // The first 'active' touch is the one that will control the item's
+    //  position until it ends, at which point a backup touch may take
+    //  over as the active touch to continue dragging.
+    
+    // If there is currently no active touch then clear the backups array.
+    if (item._rt_touchID === null) {
+      item._rt_backupTouches = [];
+    } 
+
+    // Start by making all the new touches backup touches.
+    item._rt_startTrackingBackupTouches(e.changedTouches);
+
+    // If there is already an active touch then return.
+    if (item._rt_touchID !== null) {
+      e.preventDefault();
+      return;
+    }
+
+    // Since there is no active touch select one from the backups array.
+    // touch will be an object with id, x, and y properties.
+    var touch = item._rt_selectBackupTouch();
+    if (touch === null) {
+      // This is unexpected -- this event handler was called because there are
+      //  new touches on the item, therefore there should be at least one
+      //  suitable touch in the backups array.
+      // Fallback: report the error, select the first new touch as the active one,
+      //  and make any remaining touches the backups.
+      console.error("Unexpected failure to select an active touch for item \'"+item._rt_name+"\'.");
+      var touch = {};
+      touch.id = e.changedTouches[0].identifier;
+      var itemsBB = rt._itemsDiv.getBoundingClientRect();
+      touch.x = e.changedTouches[0].clientX - itemsBB.left;
+      // NB: don't need touch.y for startDrag.
+      item._rt_backupTouches  = [];
+      var backups = Array.from(e.changedTouches).slice(1);
+      item._rt_startTrackingBackupTouches(backups);
+    }
+
+    // Attempt to start dragging.
+    var didStart = rt._startDrag(item, touch.x - item._rt_currCtrX);
+    if (didStart) {
+      item._rt_touchID = touch.id;
+      document.addEventListener("touchmove", item._rt_onTouchMoveProxy);
+      document.addEventListener("touchend", item._rt_onTouchFinishedProxy);
+      document.addEventListener("touchcancel", item._rt_onTouchFinishedProxy);
+      e.preventDefault();
+    }
+  };
+  item._rt_element.addEventListener("touchstart", item._rt_onTouchStartProxy);
+
+  // Combined touch and mouse dragging stuff.
+  item._rt_removeDragListeners = function() {
+    // Called by the ranking task's stopDrag function.
+    // This logic has been separated from the event handlers (onMouseFinishedProxy and
+    //  onTouchFinishedProxy) since dragging may be stopped for other reasons (e.g. the
+    //  question was graded during dragging).
+    if (this._rt_isBeingMouseDragged) {
+      this._rt_isBeingMouseDragged = false;
+      document.removeEventListener("mousemove", this._rt_onMouseMoveProxy);
+      document.removeEventListener("mouseup", this._rt_onMouseFinishedProxy);
+      document.removeEventListener("mouseleave", this._rt_onMouseFinishedProxy);
+    }
+    if (this._rt_touchID !== null) {
+      this._rt_touchID = null;
+      document.removeEventListener("touchmove", this._rt_onTouchMoveProxy);
+      document.removeEventListener("touchend", this._rt_onTouchFinishedProxy);
+      document.removeEventListener("touchcancel", this._rt_onTouchFinishedProxy);
+    }
+  };
   
+  // This flag is necessary for removeDragListeners.
+  item._rt_isBeingMouseDragged = false;
+
+  // The touchID property is used to track the current active touch (the touch that controls
+  //  the position of the item).
+  item._rt_touchID = null;
+
+  // The backupTouches array is used to track touches that have started on the item
+  //  after the active touch started. When the active touch ends one of these backups may be
+  //  selected to replace it, depending on how close they are to the item at that time.
+  // Each item in this array is an object with id, x, and y properties. x and y track the
+  //  most recent position of the touch in the itemsDiv container.
+  item._rt_backupTouches = [];
+
+  // Check if all the items are ready. 
   this._itemsCountdown -= 1;
   if (this._itemsCountdown == 0) {
     
-    // All items ready.
     this._isReady = true;
 
     // Make items visible.
@@ -410,6 +631,7 @@ RankingTask.prototype._resetLayout = function() {
     item._rt_width = w;
     element.style.width = w + "px";
     var h =  scale*size.height;
+    item._rt_halfHeight = h/2.0;
     element.style.height = h + "px";
     widthSum += w;
     if (h > maxHeight) maxHeight = h;
@@ -440,6 +662,8 @@ RankingTask.prototype._resetLayout = function() {
     var y = this._itemsMidlineY - (bb.height/2.0);
     element.style.top = y + "px";
     element.style.zIndex = i;
+    item._rt_currCtrY = this._itemsMidlineY;
+    item._rt_currY = y;
   }
   this._nextZIndex = this._items.length;
 
@@ -548,38 +772,56 @@ RankingTask.prototype._onFrame = function(item, now) {
   }
 };
 
-RankingTask.prototype._startDrag = function(item, pointerX) {
+RankingTask.prototype._startDrag = function(item, offsetX) {
+  // Attempts to start dragging the item with the given x offset
+  //  for the pointer (relative to the item's center).
+  // Returns a bool indicating whether dragging was started.
 
-  if (this._answerMode) {
-    return;
-  }
-
-  if (item._rt_isBeingDragged) {
-    return;
+  if (this._answerMode || item._rt_isBeingDragged) {
+    return false;
   }
 
   item._rt_isBeingDragged = true;
 
-  // Stop the item's animation (if any).
+  // Stop the item's position animation (if any).
   this._stopAnimation(item);
 
   // Bring to front.
   item._rt_element.style.zIndex = this._nextZIndex;
   this._nextZIndex += 1;
 
-  // The drag offset includes both the pointer offset and the correction needed
-  //  to convert the viewport coordinate to the container (itemsDiv) coordinate.
+  // Set drag parameters.
+  this._resetDrag(item, offsetX);
+
+  return true;
+};
+
+RankingTask.prototype._resetDrag = function(item, offsetX) {
+  // This function resets the parameters for an item that is
+  //  being dragged.
+  // offsetX is the pointer's x position relative to the item's center.
+  if (!item._rt_isBeingDragged) {
+    console.error("resetDrag called for an item that is not being dragged.");
+    return;
+  } 
   var itemBB = item._rt_element.getBoundingClientRect();
-  var itemsBB = this._itemsDiv.getBoundingClientRect();
-  item._rt_dragOffsetX = pointerX - itemBB.left + itemsBB.left;
+  item._rt_dragOffsetX = offsetX;
   item._rt_dragMinX = this._itemsMinX;
   item._rt_dragMaxX = this._itemsMaxX - itemBB.width;
 };
 
 RankingTask.prototype._updateDrag = function(item, pointerX) {
+  // Updates the position of the item being dragged given the
+  //  pointer's client x position.
+  
+  if (!item._rt_isBeingDragged) {
+    console.error("updateDrag called for an item that is not being dragged.");
+    return;
+  }
 
   // Determine the item's new drag position and move it.
-  var x = pointerX - item._rt_dragOffsetX;
+  var itemsBB = this._itemsDiv.getBoundingClientRect();
+  var x = pointerX - itemsBB.left - item._rt_dragOffsetX - item._rt_halfWidth;
   if (x < item._rt_dragMinX) {
     x = item._rt_dragMinX;
   } else if (x > item._rt_dragMaxX) {
@@ -588,8 +830,6 @@ RankingTask.prototype._updateDrag = function(item, pointerX) {
   item._rt_currX = x;
   item._rt_currCtrX = x + item._rt_halfWidth;
   item._rt_element.style.left = x + "px";
-
-  //console.log("updateDrag for "+item.getID()+", "+x);
 
   // Move the other items if necessary.
   this._updateFromScreen();
@@ -600,6 +840,9 @@ RankingTask.prototype._stopDrag = function(item) {
     return;
   }
   item._rt_isBeingDragged = false; 
+
+  item._rt_removeDragListeners();
+
   this._updateFromScreen();
 
   // todo: revisit
@@ -683,7 +926,5 @@ RTImageItem.prototype.getID = function() {
 RTImageItem.prototype.getElement = function() {
   return this._element;
 };
-
-
 
 
