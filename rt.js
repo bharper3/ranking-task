@@ -1,7 +1,7 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.9 (in active development)
+ * v0.0.10 (in active development)
  * 5 July 2018
 */
 
@@ -654,11 +654,19 @@ RankingTask.prototype._resetLayout = function() {
 
   // Review the unscaled sizes of the items.
   var widthSum = 0.0;
+  var minWidth = Number.POSITIVE_INFINITY;
+  var maxWidth = 0.0;
   var maxHeight = 0.0;
   for (var i = 0; i < this._items.length; ++i) {
     var item = this._items[i];
     var size = item.getRawSize();
     widthSum += size.width;
+    if (size.width > maxWidth) {
+      maxWidth = size.width;
+    }
+    if (size.width < minWidth) {
+      minWidth = size.width;
+    }
     if (size.height > maxHeight) {
       maxHeight = size.height;
     }
@@ -673,7 +681,10 @@ RankingTask.prototype._resetLayout = function() {
   }
   
   // Calculate the max scale such that all items fit horizontally.
-  var widthAvailable = itemsBB.width - this._margin*(this._items.length - 1);
+  // sideMargin is the total margin (left plus right) that guarantees that a larger
+  //  item can be dragged past a smaller item at the ends.
+  var sideMargin = 1.05*(maxWidth - minWidth);
+  var widthAvailable = itemsBB.width - sideMargin - this._margin*(this._items.length - 1);
   var maxWidthScale = widthAvailable/widthSum; 
   
   // Determine the scale to use and apply it to all items.
