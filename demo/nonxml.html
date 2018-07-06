@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<p>Non-XML Demo; v0.0.5; 29 June 2018</p>
+<p>Non-XML Demo; v0.0.10; 5 July 2018</p>
 
 <p>This demo uses object initialization (instead of XML initialization) so that the ranking task component can be tested offline.</p>
 
@@ -22,7 +22,7 @@
 
 <div id="rt1" class="rt-root-div" style="width: 700px; height: 200px"></div>
 
-<p>The ranking task below has a width of 50% (the height is undefined, so the component should expand vertically as necessary). Additionally, this ranking task has been instructed to select three items.</p>
+<p>The ranking task below has a width of 50% (the height is undefined, so the component should expand vertically as necessary). Additionally, this ranking task has been instructed to select three items, and to have a background page.</p>
 
 <div id="rt2" class="rt-root-div" style="width: 50%"></div>
 
@@ -41,6 +41,7 @@ var rt1 = new RankingTask(document.getElementById("rt1"));
 rt1.initWithObject(obj, "");
 var rt2 = new RankingTask(document.getElementById("rt2"));
 obj.numToSelect = 3;
+obj.background = {src: "background.html"};
 rt2.initWithObject(obj, "");
 </script>
 

@@ -5,6 +5,9 @@
 <rankingTask id="usaCurrCoins">
   <question>Rank the coins by increasing value.</question>
 <!--  <numToSelect>4</numToSelect> -->
+  <background>
+    <src>background.html</src>
+  </background>
   <items>
     <item id="penny">
       <type>image</type>

@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.8 (in active development)
- * 4 July 2018
+ * v0.0.9 (in active development)
+ * 5 July 2018
 */
 
 
@@ -52,7 +52,21 @@ function RankingTask(rootElement) {
   this._footer.className = "rt-footer";
   this._innerDiv.appendChild(this._footer);
 
+
+  var footerLeft = document.createElement("div");
+  footerLeft.className = "rt-footer-left";
+  this._footer.appendChild(footerLeft);
+
+  var footerCenter = document.createElement("div");
+  footerCenter.className = "rt-footer-center";
+  this._footer.appendChild(footerCenter);
+
+  var footerRight = document.createElement("div");
+  footerRight.className = "rt-footer-right";
+  this._footer.appendChild(footerRight);
+
   this._feedback = document.createElement("div");
+  this._feedback.textContent = ".";
   this._feedback.className = "rt-feedback";
 
   this._gradeButton = document.createElement("button");
@@ -60,16 +74,26 @@ function RankingTask(rootElement) {
   this._gradeButton.type = "button";
   this._gradeButton.name = "grade";
   this._gradeButton.textContent = "Grade";
-  this._footer.appendChild(this._gradeButton);
+  footerRight.appendChild(this._gradeButton);
 
-  this._footer.appendChild(this._feedback);
+  footerCenter.appendChild(this._feedback);
 
+  this._backgroundButton = document.createElement("button");
+  this._backgroundButton.className = "rt-background-button";
+  this._backgroundButton.type = "button";
+  this._backgroundButton.name = "background";
+  this._backgroundButton.textContent = "Background";
+  footerLeft.appendChild(this._backgroundButton);
+  
   var rt = this;
 
-  function onClickProxy(e) {
+  this._gradeButton.addEventListener("click", function(e) {
     rt._onGradeButtonClick();
-  } 
-  this._gradeButton.addEventListener("click", onClickProxy);
+  });
+
+  this._backgroundButton.addEventListener("click", function(e) {
+    rt._openBackground();
+  });
 
   this._resizeSensor = new ResizeSensor(this._itemsDiv, function() {
     //console.log("ResizeSensor called for "+rt._rootElement.id);
@@ -82,6 +106,15 @@ function RankingTask(rootElement) {
   });
   
 }
+
+
+RankingTask.prototype._openBackground = function() {
+  if (this._backgroundSrc !== null) {
+    window.open(this._backgroundSrc, this._htmlID+"0");
+  } else {
+    console.error("openBackground called without a valid source defined.");
+  }
+};
 
 RankingTask.prototype._removeChildren = function(element) {
   while (element.firstChild) {
@@ -119,6 +152,14 @@ RankingTask.prototype._onXMLLoad = function(rankingTaskID) {
   var numToSelectArr = rtXML.getElementsByTagName("numToSelect");
   if (numToSelectArr.length > 0) {
     obj.numToSelect = numToSelectArr[0].childNodes[0].nodeValue;
+  }
+
+  var backgroundArr = rtXML.getElementsByTagName("background");
+  if (backgroundArr.length > 0) {
+    var srcArr = backgroundArr[0].getElementsByTagName("src");
+    if (srcArr.length > 0) {
+      obj.background = {src: srcArr[0].childNodes[0].nodeValue};
+    } 
   }
  
   var itemsXML = rtXML.getElementsByTagName("items")[0].getElementsByTagName("item");
@@ -208,6 +249,23 @@ RankingTask.prototype._reset = function(obj, baseURL) {
     }
   }
 
+  var enableBackgroundPage = true;
+
+  if (enableBackgroundPage && obj.background !== undefined && obj.background.src !== undefined) {
+    // Enable background page option.
+    this._backgroundButton.style.display = "block";
+    if (baseURL !== null) {
+      const urlObj = new URL(obj.background.src, baseURL);
+      this._backgroundSrc = urlObj.toString();
+    } else {
+      this._backgroundSrc = obj.background.src;
+    }
+  } else {
+     // No background page option.
+    this._backgroundButton.style.display = "none";
+    this._backgroundSrc = null;
+  }
+
   this._gradeButton.textContent = "Grade";
   if (allowGrading) {
     this._gradeButton.disabled = false;
@@ -215,7 +273,7 @@ RankingTask.prototype._reset = function(obj, baseURL) {
     this._gradeButton.disabled = true;
   }
 
-  this._feedback.textContent = "";
+  this._feedback.textContent = " ";
 
   this._answerMode = false;
 };

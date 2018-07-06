@@ -1,6 +1,8 @@
-# Ranking Task XML Specification, v0.1 (30 June 2018)
+# Ranking Task XML Specification, v0.2 (5 July 2018)
 
 (This is a very preliminary version -- expect breaking changes.)
+
+(Changes are documented at the bottom.)
 
 A ranking task is defined by a `rankingTask` node. There may be multiple ranking tasks defined in a single XML file.
 
@@ -37,11 +39,16 @@ Note: the order of the items in the items list does not matter -- it is their `v
 
 The ranking task may have an optional `numToSelect` node with an integer value. If defined, this will instruct the ranking task component to select a random subset of items from the items list. Otherwise, all items will be selected.
 
+The ranking task may also have an optional `background` node. If defined, this node must have one `src` node that provides the address of the background page (either absolute or relative to the XML file).
+
 Example (full):
 ```xml
 <rankingTask id="usaCurrCoins">
   <question>Rank the coins by increasing value.</question>
   <numToSelect>3</numToSelect>
+  <background>
+    <src>background.html</src>
+  </background>
   <items>
     <item id="penny">
       <type>image</type>
@@ -66,3 +73,10 @@ Example (full):
   </items>
 </rankingTask>
 ```
+
+### Change History
+
+##### v0.2 (5 July 2018)
+
+* Added background tag.
+
