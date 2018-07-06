@@ -1,7 +1,7 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.10 (in active development)
+ * v0.0.11 (in active development)
  * 5 July 2018
 */
 
@@ -47,11 +47,9 @@ function RankingTask(rootElement) {
   this._itemsDiv.className = "rt-items-div";
   this._innerDiv.appendChild(this._itemsDiv);
 
-
   this._footer = document.createElement("div");
   this._footer.className = "rt-footer";
   this._innerDiv.appendChild(this._footer);
-
 
   var footerLeft = document.createElement("div");
   footerLeft.className = "rt-footer-left";
@@ -273,7 +271,7 @@ RankingTask.prototype._reset = function(obj, baseURL) {
     this._gradeButton.disabled = true;
   }
 
-  this._feedback.textContent = " ";
+  this._feedback.textContent = "";
 
   this._answerMode = false;
 };
@@ -292,21 +290,42 @@ RankingTask.prototype._onGradeButtonClick = function() {
 
 RankingTask.prototype._grade = function() {
   // todo: revise structure
-  console.log("grade");
+  
   this._answerMode = true;
 
-  // todo: make more helpful
+  // Determine the correct order and update the order labels.
+  var ordered = this._items.slice(); 
+  ordered.sort(function(a, b) {
+    return a._rt_value - b._rt_value;
+  });
+  for (var i = 0; i < ordered.length; ++i) {
+    ordered[i]._rt_order = i;
+    ordered[i]._rt_annotation.textContent = (i+1).toString();
+    ordered[i]._rt_annotation.style.display = "block";
+  }
 
+  // Change the order label's color depending on if it is in
+  //  the correct position.
+  for (var i = 0; i < this._items.length; ++i) {
+    if (this._items[i]._rt_order == i) {
+      this._items[i]._rt_annotation.style.color = "black";
+      this._items[i]._rt_annotation.style.borderColor = "black";
+    } else {
+      this._items[i]._rt_annotation.style.color = "red";
+      this._items[i]._rt_annotation.style.borderColor = "red";
+    }
+  }
+
+  // Check if the items are in the correct order and provide feedback.
+  var feedbackStr = "Correct!";
   var prevValue = this._items[0]._rt_value;
   for (var i = 1; i < this._items.length; ++i) {
     if (prevValue > this._items[i]._rt_value) {
-      this._feedback.textContent = "Incorrect!";
-      return;
+      feedbackStr = "Incorrect!";
     }
     prevValue = this._items[i]._rt_value;
   }
-
-  this._feedback.textContent = "Correct!";  
+  this._feedback.textContent = feedbackStr;  
 };
 
 RankingTask.prototype.initWithObject = function(obj, baseURL) {
@@ -371,6 +390,12 @@ RankingTask.prototype._itemIsReady = function(item) {
   item._rt_element = item.getElement();
   item._rt_element.style.display = "none";
   this._itemsDiv.appendChild(item._rt_element);
+
+  item._rt_annotation = document.createElement("div");
+  item._rt_annotation.className = "rt-item-annotation";
+  item._rt_annotation.textContent = "X";
+  item._rt_annotation.style.display = "none";
+  item._rt_element.appendChild(item._rt_annotation);
 
   // Add functions and properties to the item for dragging.
   var rt = this;
@@ -722,6 +747,7 @@ RankingTask.prototype._resetLayout = function() {
   this._itemsMinX = -this.dragMarginIncursion*this._margin;
   this._itemsMaxX = itemsBB.width + this.dragMarginIncursion*this._margin;
   this._itemsHalfRange = (this._itemsMaxX - this._itemsMinX)/2.0;
+  this._itemAnnotionY = ((1.0 - 0.4)*this._itemsMidlineY);
 
   // Position the items vertically and initialize z ordering.
   for (var i = 0; i < this._items.length; ++i) {
@@ -733,9 +759,12 @@ RankingTask.prototype._resetLayout = function() {
     element.style.zIndex = i;
     item._rt_currCtrY = this._itemsMidlineY;
     item._rt_currY = y;
+
+    // Position the order label.
+    item._rt_annotation.style.left = (bb.width/2.0) + "px";
+    item._rt_annotation.style.top = ((bb.height/2.0) - this._itemAnnotionY) + "px";
   }
   this._nextZIndex = this._items.length;
-
 };
 
 RankingTask.prototype._cancelAllDragging = function() {
