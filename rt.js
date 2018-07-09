@@ -1,8 +1,8 @@
 /*
  * Ranking Task Widget - JavaScript
  * astro.unl.edu
- * v0.0.11 (in active development)
- * 5 July 2018
+ * v0.0.12 (in active development)
+ * 9 July 2018
 */
 
 
@@ -159,20 +159,40 @@ RankingTask.prototype._onXMLLoad = function(rankingTaskID) {
       obj.background = {src: srcArr[0].childNodes[0].nodeValue};
     } 
   }
- 
-  var itemsXML = rtXML.getElementsByTagName("items")[0].getElementsByTagName("item");
 
-  obj.items = [];
-  for (var i = 0; i < itemsXML.length; ++i) {
-    var itemXML = itemsXML[i];
-    var item = {};
-    item.id = itemXML.id;
-    item.type = itemXML.getElementsByTagName("type")[0].childNodes[0].nodeValue;
-    item.value = itemXML.getElementsByTagName("value")[0].childNodes[0].nodeValue;
-    item.src = itemXML.getElementsByTagName("src")[0].childNodes[0].nodeValue;
-    obj.items.push(item);    
+  function getItems(itemsXML) {
+    // Parses the array of items XML and returns an array of objects.
+    var items = [];
+    for (var i = 0; i < itemsXML.length; ++i) {
+      var itemXML = itemsXML[i];
+      var item = {};
+      item.id = itemXML.id;
+      item.type = itemXML.getElementsByTagName("type")[0].childNodes[0].nodeValue;
+      item.value = itemXML.getElementsByTagName("value")[0].childNodes[0].nodeValue;
+      item.src = itemXML.getElementsByTagName("src")[0].childNodes[0].nodeValue;
+      items.push(item);
+    }
+    return items; 
   }
 
+  var binsXML = rtXML.getElementsByTagName("items");
+  if (binsXML.length > 1) {
+    // There are multiple items lists, so use binning.
+    obj.bins = [];
+    for (var i = 0; i < binsXML.length; ++i) {
+      var bin = {};
+      bin.id = binsXML[i].id;
+      bin.items = getItems(binsXML[i].getElementsByTagName("item"));
+      obj.bins.push(bin);
+    }
+  } else if (binsXML.length == 1) {
+    // There is just one items list.
+    obj.items = getItems(binsXML[0].getElementsByTagName("item"));
+  } else {
+    console.error("The ranking task ("+rankingTaskID+") has no items.");
+    return;
+  }
+  
   // The baseURL is set to the directory of the XML file.
   var baseURL = "";
   var i = this._xmlReq.responseURL.lastIndexOf("/");
@@ -197,16 +217,76 @@ RankingTask.prototype._reset = function(obj, baseURL) {
 
   this._question.textContent = obj.question;
 
-  // Randomize the order of items (the complete list).
-  var shuffledItems = this._shuffle(obj.items);
-  
-  // Select a subset of items, if specified.
+  // The actual number selected is always limited by the number
+  //  of items available.
+  var defaultNumToSelect = 5;
+
   var numToSelect = parseInt(obj.numToSelect);
-  if (Number.isNaN(numToSelect) || numToSelect < 2 || numToSelect > shuffledItems.length) {
+  if (Number.isNaN(numToSelect) || numToSelect < 2) {
     // todo: warn if numToSelect is defined but not valid
-    numToSelect = shuffledItems.length;
+    numToSelect = defaultNumToSelect;
   }
-  var selectedItems = shuffledItems.slice(0, numToSelect);
+
+  var selectedItems = null;
+  if (obj.items !== undefined) {
+    // Option 1: there is a single items array.
+    var shuffledItems = this._shuffle(obj.items);
+    selectedItems = shuffledItems.slice(0, numToSelect);
+  } else if (obj.bins !== undefined) {
+    // Option 2: the items are binned.
+
+    // Shuffle the order of the bins, and shuffle the bins' items.
+    var shuffledBins = this._shuffle(obj.bins);
+    for (var i = 0; i < shuffledBins.length; ++i) {
+      shuffledBins[i].items = this._shuffle(shuffledBins[i].items);
+    }
+  
+    // To the extent possible, we want to select the same number of items
+    //  from each bin. (This is strictly possible only when numToSelect is a
+    //  multiple of the number of bins, and there are enough items in each bin.) 
+    // Starting conditions:
+    //  - The order of the bins has been randomized.
+    //  - The items in each bin have been shuffled.
+    // Selection strategy:
+    //  - Select items in rounds. During each round one item is selected
+    //    from each non-empty bin (i.e. still contains unselected items).
+    //    Since the items arrays have been shuffled we can simply select
+    //    the items by index (roundIndex).
+    //  - Stop whenever numToSelect items have been selected.
+    //  - The order of bins is identical in each round, so the selected items
+    //    will need to be shuffled one last time after they have been selected.
+    var tmpItems = [];
+    var roundIndex = 0;
+    while (tmpItems.length < numToSelect) { 
+      var numThisRound = 0;
+      for (var i = 0; i < shuffledBins.length; ++i) {
+        var binItems = shuffledBins[i].items;
+        if (binItems.length <= roundIndex) {
+          // The bin has no unselected items.
+          continue;
+        }
+        tmpItems.push(binItems[roundIndex]);  
+        numThisRound += 1;
+        if (tmpItems.length >= numToSelect) {
+          // All done.
+          break;
+        }
+      }
+      if (numThisRound === 0) {
+        // All bins are exhausted, so we're done.
+        break;
+      }
+      roundIndex += 1; 
+    }
+    selectedItems = this._shuffle(tmpItems);
+  }
+
+  numToSelect = Math.min(numToSelect, selectedItems.length);
+
+  if (selectedItems === null) {
+    console.error("Unable to select items.");
+    return;
+  }
 
   var allowGrading = true;
 
@@ -335,8 +415,12 @@ RankingTask.prototype.initWithObject = function(obj, baseURL) {
   // The object is expected to have these properties:
   //   id
   //   question
-  //   items (an array)
+  //   items (an array) OR bins (an array)
+  //    (if items exists, bins is ignored even if defined)
   //   numToSelect (optional)
+  // A bin is an object with
+  //   id (optional)
+  //   items (an array) - an array of items in the bin
   // Each item is expected to have
   //   id (optional) - uniquely identifies the item within the items list
   //   type - valid options: "image"
@@ -363,9 +447,11 @@ RankingTask.prototype._reportException = function(message) {
   // todo: revise structure 
 };
 
-RankingTask.prototype._shuffle = function(array) {
+RankingTask.prototype._shuffle = function(originalArray) {
   // Copied from https://stackoverflow.com/a/2450976 (28 June 2018).
+  // Modified 9 July 2018 to leave original array unmodified.
   
+  var array = originalArray.slice(0);
   var currentIndex = array.length, temporaryValue, randomIndex;
 
   // While there remain elements to shuffle...

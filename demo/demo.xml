@@ -2,7 +2,7 @@
 <bank>
 <rankingTask id="binTest">
   <question>Put the letters in alphabetical order.</question>
-  <numToSelect>4</numToSelect>
+  <numToSelect>5</numToSelect>
   <items id="blue">
     <item id="A">
       <type>image</type>
