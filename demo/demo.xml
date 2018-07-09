@@ -1,6 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bank>
-<rankingTask id="test01">
+<rankingTask id="binTest">
+  <question>Put the letters in alphabetical order.</question>
+  <numToSelect>4</numToSelect>
+  <items id="blue">
+    <item id="A">
+      <type>image</type>
+      <src>blueA.png</src>
+      <value>1</value>
+    </item>
+    <item id="B">
+      <type>image</type>
+      <src>blueB.png</src>
+      <value>2</value>
+    </item>
+    <item id="C">
+      <type>image</type>
+      <src>blueC.png</src>
+      <value>3</value>
+    </item>
+    <item id="D">
+      <type>image</type>
+      <src>blueD.png</src>
+      <value>4</value>
+    </item>
+  </items>
+  <items id="red">
+    <item id="A">
+      <type>image</type>
+      <src>redA.png</src>
+      <value>1</value>
+    </item>
+    <item id="B">
+      <type>image</type>
+      <src>redB.png</src>
+      <value>2</value>
+    </item>
+    <item id="C">
+      <type>image</type>
+      <src>redC.png</src>
+      <value>3</value>
+    </item>
+    <item id="D">
+      <type>image</type>
+      <src>redD.png</src>
+      <value>4</value>
+    </item>
+  </items>
+  <items id="green">
+    <item id="A">
+      <type>image</type>
+      <src>greenA.png</src>
+      <value>1</value>
+    </item>
+    <item id="B">
+      <type>image</type>
+      <src>greenB.png</src>
+      <value>2</value>
+    </item>
+    <item id="C">
+      <type>image</type>
+      <src>greenC.png</src>
+      <value>3</value>
+    </item>
+    <item id="D">
+      <type>image</type>
+      <src>greenD.png</src>
+      <value>4</value>
+    </item>
+  </items>
+  <items id="orange">
+    <item id="A">
+      <type>image</type>
+      <src>orangeA.png</src>
+      <value>1</value>
+    </item>
+    <item id="B">
+      <type>image</type>
+      <src>orangeB.png</src>
+      <value>2</value>
+    </item>
+    <item id="C">
+      <type>image</type>
+      <src>orangeC.png</src>
+      <value>3</value>
+    </item>
+    <item id="D">
+      <type>image</type>
+      <src>orangeD.png</src>
+      <value>4</value>
+    </item>
+  </items>
 </rankingTask>
 <rankingTask id="usaCurrCoins">
   <question>Rank the coins by increasing value.</question>
