@@ -2,9 +2,7 @@
 <rankingTask id="scale">
   <question>Rank the items by decreasing distance from Earth.</question>
   <numToSelect>5</numToSelect>
-  <background>
-    <src>background.html</src>
-  </background>
+
   <items>
     <item id="moon">
       <type>image</type>
