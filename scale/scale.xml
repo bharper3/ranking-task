@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rankingTask id="scale">
   <question>Rank the items by decreasing distance from Earth.</question>
-  <numToSelect>3</numToSelect>
+  <numToSelect>5</numToSelect>
   <background>
     <src>background.html</src>
   </background>
@@ -57,7 +57,7 @@
   <items>
     <item id="alphacentauri">
       <type>image</type>
-      <src>Alphacentauri.png</src>
+      <src>AlphaCentauri.png</src>
       <value>3</value>
     </item>
     <item id="sirius">
@@ -74,7 +74,7 @@
   <items>
     <item id="centerofmilkyway">
       <type>image</type>
-      <src>Milkyway.png</src>
+      <src>MilkyWay.png</src>
       <value>4</value>
     </item>
     <item id="m3">
@@ -94,6 +94,22 @@
       <src>SMC.png</src>
       <value>5</value>
     </item>
+    <item id="andromeda">
+      <type>image</type>
+      <src>Andromeda.png</src>
+      <value>5</value>
+    </item>
   </items>
-  
+  <items>
+    <item id="virgo">
+      <type>image</type>
+      <src>VirgoSuperCluster.png</src>
+      <value>6</value>
+    </item>
+    <item id="coma">
+      <type>image</type>
+      <src>ComaSuperCluster.png</src>
+      <value>6</value>
+    </item>
+  </items>
 </rankingTask>
