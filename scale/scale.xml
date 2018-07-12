@@ -57,7 +57,7 @@
   <items>
     <item id="alphacentauri">
       <type>image</type>
-      <src>AlphaCentauri.png</src>
+      <src>https://github.com/bharper3/ranking-task/blob/master/scale/images/AlphaCentauri.png</src>
       <value>3</value>
     </item>
     <item id="sirius">
@@ -67,7 +67,7 @@
     </item>
     <item id="antares">
       <type>image</type>
-      <src>Antares.png</src>
+      <src>https://github.com/bharper3/ranking-task/blob/master/scale/images/Antares.png</src>
       <value>3</value>
     </item>
   </items>
@@ -96,7 +96,7 @@
     </item>
     <item id="andromeda">
       <type>image</type>
-      <src>Andromeda.png</src>
+      <src>https://github.com/bharper3/ranking-task/blob/master/scale/images/Andromeda.png</src>
       <value>5</value>
     </item>
   </items>
