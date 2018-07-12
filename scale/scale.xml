@@ -6,25 +6,94 @@
     <src>background.html</src>
   </background>
   <items>
-    <item id="penny">
+    <item id="moon">
       <type>image</type>
-      <src>penny.png</src>
+      <src>Moon.png</src>
       <value>1</value>
     </item>
-    <item id="nickel">
+    <item id="venus">
       <type>image</type>
-      <src>nickel.png</src>
-      <value>5</value>
+      <src>Venus.png</src>
+      <value>1</value>
     </item>
-    <item id="dime">
+    <item id="mars">
       <type>image</type>
-      <src>dime.png</src>
-      <value>10</value>
+      <src>Mars.png</src>
+      <value>1</value>
     </item>
-    <item id="quarter">
+    <item id="mercury">
       <type>image</type>
-      <src>quarter.png</src>
-      <value>25</value>
+      <src>Mercury.png</src>
+      <value>1</value>
     </item>
   </items>
+  <items>
+    <item id="jupiter">
+      <type>image</type>
+      <src>Jupiter.png</src>
+      <value>2</value>
+    </item>
+    <item id="saturn">
+      <type>image</type>
+      <src>Saturn.png</src>
+      <value>2</value>
+    </item>
+    <item id="uranus">
+      <type>image</type>
+      <src>Uranus.png</src>
+      <value>2</value>
+    </item>
+    <item id="neptune">
+      <type>image</type>
+      <src>Neptune.png</src>
+      <value>2</value>
+    </item>
+    <item id="pluto">
+      <type>image</type>
+      <src>Pluto.png</src>
+      <value>2</value>
+    </item> 
+  </items>
+  <items>
+    <item id="alphacentauri">
+      <type>image</type>
+      <src>Alphacentauri.png</src>
+      <value>3</value>
+    </item>
+    <item id="sirius">
+      <type>image</type>
+      <src>Sirius.png</src>
+      <value>3</value>
+    </item>
+    <item id="antares">
+      <type>image</type>
+      <src>Antares.png</src>
+      <value>3</value>
+    </item>
+  </items>
+  <items>
+    <item id="centerofmilkyway">
+      <type>image</type>
+      <src>Milkyway.png</src>
+      <value>4</value>
+    </item>
+    <item id="m3">
+      <type>image</type>
+      <src>M3.png</src>
+      <value>4</value>
+    </item>
+  </items>
+  <items>
+    <item id="lmc">
+      <type>image</type>
+      <src>LMC.png</src>
+      <value>5</value>
+    </item>
+    <item id="smc">
+      <type>image</type>
+      <src>SMC.png</src>
+      <value>5</value>
+    </item>
+  </items>
+  
 </rankingTask>
