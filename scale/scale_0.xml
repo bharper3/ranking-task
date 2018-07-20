@@ -1,115 +1,123 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rankingTask id="scale">
-  <question>Rank the items by decreasing distance from Earth.</question>
+  <question>Rank the items by increasing distance from Earth.</question>
   <numToSelect>5</numToSelect>
   <background>
-    <src>background.html</src>
+    <src>scale_background.html</src>
   </background>
   <items>
     <item id="moon">
       <type>image</type>
-      <src>Moon.png</src>
+      <src>Moon_0.png</src>
       <value>1</value>
     </item>
     <item id="venus">
       <type>image</type>
-      <src>Venus.png</src>
+      <src>Venus_0.png</src>
       <value>1</value>
     </item>
     <item id="mars">
       <type>image</type>
-      <src>Mars.png</src>
+      <src>Mars_0.png</src>
       <value>1</value>
     </item>
     <item id="mercury">
       <type>image</type>
-      <src>Mercury.png</src>
+      <src>Mercury_0.png</src>
       <value>1</value>
     </item>
   </items>
   <items>
     <item id="jupiter">
       <type>image</type>
-      <src>Jupiter.png</src>
+      <src>Jupiter_0.png</src>
       <value>2</value>
     </item>
     <item id="saturn">
       <type>image</type>
-      <src>Saturn.png</src>
+      <src>Saturn_0.png</src>
       <value>2</value>
     </item>
     <item id="uranus">
       <type>image</type>
-      <src>Uranus.png</src>
+      <src>Uranus_0.png</src>
       <value>2</value>
     </item>
     <item id="neptune">
       <type>image</type>
-      <src>Neptune.png</src>
+      <src>Neptune_0.png</src>
       <value>2</value>
     </item>
     <item id="pluto">
       <type>image</type>
-      <src>Pluto.png</src>
+      <src>Pluto_0.png</src>
       <value>2</value>
     </item> 
   </items>
   <items>
     <item id="alphacentauri">
       <type>image</type>
-      <src>AlphaCentauri.png</src>
+      <src>AlphaCentauri_0.png</src>
       <value>3</value>
     </item>
     <item id="sirius">
       <type>image</type>
-      <src>Sirius.png</src>
+      <src>Sirius_0.png</src>
       <value>3</value>
+    </item>
+  </items>
+  <items>
+    <item id="polaris">
+      <type>image</type>
+      <src>Polaris_0.png</src>
+      <value>4</value>
     </item>
     <item id="antares">
       <type>image</type>
-      <src>Antares.png</src>
-      <value>3</value>
+      <src>Antares_0.png</src>
+      <value>4</value>
     </item>
   </items>
   <items>
     <item id="centerofmilkyway">
       <type>image</type>
-      <src>MilkyWay.png</src>
-      <value>4</value>
+      <src>MilkyWay_0.png</src>
+      <value>5</value>
     </item>
     <item id="m3">
       <type>image</type>
-      <src>M3.png</src>
-      <value>4</value>
+      <src>M3_0.png</src>
+      <value>5</value>
     </item>
   </items>
   <items>
     <item id="lmc">
       <type>image</type>
-      <src>LMC.png</src>
-      <value>5</value>
+      <src>LMC_0.png</src>
+      <value>6</value>
     </item>
     <item id="smc">
       <type>image</type>
-      <src>SMC.png</src>
-      <value>5</value>
+      <src>SMC_0.png</src>
+      <value>6</value>
     </item>
     <item id="andromeda">
       <type>image</type>
-      <src>Andromeda.png</src>
-      <value>5</value>
+      <src>Andromeda_0.png</src>
+      <value>6</value>
     </item>
   </items>
   <items>
     <item id="virgo">
       <type>image</type>
-      <src>VirgoSuperCluster.png</src>
-      <value>6</value>
+      <src>VirgoSuperCluster_0.png</src>
+      <value>7</value>
     </item>
     <item id="coma">
       <type>image</type>
-      <src>ComaSuperCluster.png</src>
-      <value>6</value>
+      <src>ComaSuperCluster_0.png</src>
+      <value>7</value>
     </item>
   </items>
 </rankingTask>
+
