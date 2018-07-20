@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scale</title>
+
+<link rel="stylesheet" type="text/css" href="http://localhost/~Brandon_Harper/rt.css">
+<script src="http://localhost/~Brandon_Harper/url-polyfill.js"></script>
+<script src="http://localhost/~Brandon_Harper/ResizeSensor.js"></script>
+<script src="http://localhost/~Brandon_Harper/rt.js"></script>
+</head>
+<body>
+
+<p>Scale Test.</p>
+
+<div id="rt2" class="rt-root-div" style="width: 700px; height: 200px"></div>
+
+<script>
+var rt2 = new RankingTask(document.getElementById("rt2"));
+rt2.initWithURL("scale_0.xml", "scale");
+</script>
+
+</body>
+</html>
+
